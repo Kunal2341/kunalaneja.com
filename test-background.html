@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Background Test</title>
+  <style>
+    body { margin: 0; background: #0B0D10; color: white; font-family: Arial; }
+    #bg { position: fixed; inset: 0; width: 100%; height: 100%; }
+    .content { position: relative; z-index: 1; padding: 2rem; }
+  </style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+  <div class="content">
+    <h1>Background Test</h1>
+    <p>Check console for errors</p>
+    <div id="status">Loading...</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('bg');
+    const status = document.getElementById('status');
+    
+    // Test WebGL support
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    
+    if (!gl) {
+      status.innerHTML = '❌ WebGL not supported';
+      canvas.style.background = '#0B0D10';
+    } else {
+      status.innerHTML = '✅ WebGL supported';
+      
+      // Simple test shader
+      const vertexShader = `
+        attribute vec2 position;
+        void main() {
+          gl_Position = vec4(position, 0.0, 1.0);
+        }
+      `;
+      
+      const fragmentShader = `
+        precision mediump float;
+        uniform float time;
+        void main() {
+          float grid = sin(gl_FragCoord.x * 0.01 + time) * sin(gl_FragCoord.y * 0.01 + time);
+          gl_FragColor = vec4(0.2, 0.3, 0.8, abs(grid));
+        }
+      `;
+      
+      function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+          return null;
+        }
+        return shader;
+      }
+      
+      function createProgram(vertexShader, fragmentShader) {
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error('Program linking error:', gl.getProgramInfoLog(program));
+          return null;
+        }
+        return program;
+      }
+      
+      const vs = createShader(gl.VERTEX_SHADER, vertexShader);
+      const fs = createShader(gl.FRAGMENT_SHADER, fragmentShader);
+      
+      if (vs && fs) {
+        const program = createProgram(vs, fs);
+        
+        if (program) {
+          status.innerHTML = '✅ Shaders compiled successfully';
+          
+          // Setup geometry
+          const vertices = new Float32Array([
+            -1, -1,  1, -1,  -1, 1,
+            -1, 1,   1, -1,   1, 1
+          ]);
+          
+          const buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+          
+          const positionLocation = gl.getAttribLocation(program, 'position');
+          gl.enableVertexAttribArray(positionLocation);
+          gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+          
+          const timeLocation = gl.getUniformLocation(program, 'time');
+          
+          // Resize canvas
+          function resize() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            gl.viewport(0, 0, canvas.width, canvas.height);
+          }
+          
+          resize();
+          window.addEventListener('resize', resize);
+          
+          // Animation loop
+          function animate(time) {
+            gl.useProgram(program);
+            gl.uniform1f(timeLocation, time * 0.001);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(animate);
+          }
+          
+          animate(0);
+          status.innerHTML = '✅ Background animation running!';
+        } else {
+          status.innerHTML = '❌ Program creation failed';
+        }
+      } else {
+        status.innerHTML = '❌ Shader compilation failed';
+      }
+    }
+  </script>
+</body>
+</html>

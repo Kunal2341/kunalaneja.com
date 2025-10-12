@@ -1,5 +1,5 @@
 // Main application script
-import { initMeshPulseBackground, disposeMeshPulseBackground } from '../../bg/mesh-pulse';
+import { initMeshPulseBackground, disposeMeshPulseBackground } from '../../bg/mesh-pulse.js';
 
 class PersonalWebsite {
   constructor() {
