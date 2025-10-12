@@ -1,0 +1,13 @@
+<svg width="1024" height="1024" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gauss" cx="50%" cy="50%" r="65%">
+      <stop offset="0%"  stop-color="#06B6D4" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#06B6D4" stop-opacity="0.55"/>
+      <stop offset="85%" stop-color="#A21CAF" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#A21CAF" stop-opacity="0.00"/>
+    </radialGradient>
+  </defs>
+  <rect width="256" height="256" fill="none"/>
+  <!-- rounded square tile with Gaussian fill -->
+  <rect x="28" y="28" width="200" height="200" rx="24" ry="24" fill="url(#gauss)" stroke="#0B1221" stroke-width="4"/>
+</svg>

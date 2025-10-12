@@ -14,7 +14,12 @@ export default function Navbar() {
     <div className="fixed top-0 inset-x-0 z-50">
       <div className="container-xl py-3">
         <div className="glass rounded-xl px-4 py-2 flex items-center justify-between">
-          <a href="#home" className="font-bold tracking-tight">
+          <a href="#home" className="flex items-center gap-3 font-bold tracking-tight">
+            <img 
+              src="/logo.svg" 
+              alt="Logo" 
+              className="w-8 h-8 rounded-lg"
+            />
             <span className="text-white/90">Kunal</span>
             <span className="text-white/60">Aneja</span>
           </a>

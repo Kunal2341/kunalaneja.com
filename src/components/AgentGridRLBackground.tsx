@@ -82,6 +82,10 @@ export default function AgentGridRLBackground({ children }: Props) {
     // Moving goal (single shared), shown by default
     let goal = { x: Math.floor(nx * 0.75), y: Math.floor(ny * 0.5) };
     let showGoal = true;
+    
+    // Auto-spawn timer
+    let lastSpawnTime = 0;
+    const SPAWN_INTERVAL = 3000; // 3 seconds
 
     // Ripples
     type Ripple = { x: number, y: number, t: number, amp: number, speed: number, decay: number };
@@ -516,6 +520,30 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       // Let pointer subtly influence ripples when active (rarer)
       if (pointer.active && Math.random() < 0.05) emitPulse(pointer.x, pointer.y, 0.25);
+
+      // Auto-spawn new agents every few seconds
+      if (now - lastSpawnTime > SPAWN_INTERVAL && agents.length < 12) {
+        const spawnX = Math.floor(Math.random() * nx);
+        const spawnY = Math.floor(Math.random() * ny);
+        
+        const newAgent = {
+          x: spawnX,
+          y: spawnY,
+          eps: 0.20 + Math.random() * 0.25,
+          alpha: 0.22,
+          gamma: 0.96,
+          modeChaos: false,
+          modeFlock: true,
+          colorHue: Math.floor(Math.random() * 360), // random color for auto-spawned agents
+          trail: [] as Array<{x:number,y:number}>,
+        };
+        
+        agents.push(newAgent);
+        lastSpawnTime = now;
+        
+        // Add a small pulse at spawn location
+        emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.0);
+      }
 
       // RL: fewer steps per frame (subtle)
       for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);

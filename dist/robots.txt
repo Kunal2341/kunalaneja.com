@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kunalaneja.com/sitemap.xml
