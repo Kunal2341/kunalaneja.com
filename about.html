@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Kunal Aneja</title>
+  <meta name="description" content="Learn about Kunal Aneja, a robotics researcher and engineer specializing in reinforcement learning, computer vision, and embodied AI.">
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kunalaneja.com/about/">
+  <meta property="og:title" content="About - Kunal Aneja">
+  <meta property="og:description" content="Learn about Kunal Aneja, a robotics researcher and engineer specializing in reinforcement learning and embodied AI.">
+  <meta property="og:image" content="https://kunalaneja.com/assets/img/og-image.jpg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <!-- Background Canvas -->
+  <canvas id="background-canvas" class="fixed inset-0 w-full h-full -z-10"></canvas>
+  
+  <!-- Skip to content link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-accent-1 text-bg-primary px-4 py-2 rounded-md z-50">
+    Skip to content
+  </a>
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-40 backdrop-blur-md bg-bg-primary/80 border-b border-text-primary/10">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl font-bold text-text-primary hover:text-accent-2 transition-colors">
+          Kunal Aneja
+        </a>
+        <div class="hidden md:flex space-x-8">
+          <a href="/projects/" class="text-text-primary hover:text-accent-2 transition-colors">Projects</a>
+          <a href="/research/" class="text-text-primary hover:text-accent-2 transition-colors">Research</a>
+          <a href="/notes/" class="text-text-primary hover:text-accent-2 transition-colors">Notes</a>
+          <a href="/about/" class="text-accent-2 font-medium">About</a>
+          <a href="/contact/" class="text-text-primary hover:text-accent-2 transition-colors">Contact</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main-content" class="min-h-screen pt-20">
+    <!-- Header -->
+    <section class="py-20 px-6">
+      <div class="max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-text-primary mb-6">About Me</h1>
+            <p class="text-xl text-text-primary/80 mb-8 leading-relaxed">
+              I'm a robotics researcher and engineer passionate about developing intelligent systems 
+              that can learn, adapt, and interact with the physical world.
+            </p>
+            <div class="flex gap-4">
+              <a href="/assets/pdf/CV.pdf" class="btn-primary" target="_blank">Download CV</a>
+              <a href="/contact/" class="btn-secondary">Get in Touch</a>
+            </div>
+          </div>
+          <div class="aspect-square bg-text-primary/10 rounded-2xl flex items-center justify-center">
+            <div class="text-text-primary/40 text-center">
+              <div class="text-6xl mb-4">👨‍💻</div>
+              <p>Professional Photo</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bio Section -->
+    <section class="py-20 px-6 bg-text-primary/5">
+      <div class="max-w-4xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-12">
+          <div>
+            <h2 class="text-3xl font-bold text-text-primary mb-8">Background</h2>
+            <div class="space-y-6 text-text-primary/80 leading-relaxed">
+              <p>
+                My journey in robotics began with a fascination for how machines could learn and adapt 
+                to their environment. Over the years, I've focused on developing algorithms and systems 
+                that enable robots to understand and interact with the world around them.
+              </p>
+              <p>
+                I specialize in reinforcement learning, computer vision, and embodied AI, with particular 
+                expertise in robotic manipulation, autonomous navigation, and human-robot interaction. 
+                My work combines theoretical research with practical implementation to create systems 
+                that are both scientifically rigorous and practically useful.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h2 class="text-3xl font-bold text-text-primary mb-8">Expertise</h2>
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-lg font-semibold text-text-primary mb-2">Robotics & AI</h3>
+                <p class="text-text-primary/70 text-sm">Reinforcement Learning, Computer Vision, Embodied AI, Robotic Manipulation</p>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-text-primary mb-2">Programming</h3>
+                <p class="text-text-primary/70 text-sm">Python, C++, ROS2, PyTorch, TensorFlow, OpenCV</p>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-text-primary mb-2">Tools & Frameworks</h3>
+                <p class="text-text-primary/70 text-sm">Isaac Lab, Gazebo, MuJoCo, OpenAI Gym, PCL</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Experience Timeline -->
+    <section class="py-20 px-6">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold text-text-primary mb-12 text-center">Experience</h2>
+        <div class="space-y-8">
+          <div class="card">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 class="text-xl font-semibold text-text-primary mb-2">Research Engineer</h3>
+                <p class="text-accent-1 font-medium mb-2">Robotics Lab • 2022 - Present</p>
+                <p class="text-text-primary/80 leading-relaxed">
+                  Leading research in embodied AI and robotic manipulation. Developing novel algorithms 
+                  for actionless video dynamics and multi-modal sensor fusion.
+                </p>
+              </div>
+              <div class="text-text-primary/60 text-sm">
+                2022 - Present
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 class="text-xl font-semibold text-text-primary mb-2">ML Engineer</h3>
+                <p class="text-accent-1 font-medium mb-2">AI Research Company • 2020 - 2022</p>
+                <p class="text-text-primary/80 leading-relaxed">
+                  Developed deep reinforcement learning pipelines for complex manipulation tasks, 
+                  achieving state-of-the-art performance on benchmark datasets.
+                </p>
+              </div>
+              <div class="text-text-primary/60 text-sm">
+                2020 - 2022
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 class="text-xl font-semibold text-text-primary mb-2">Software Engineer</h3>
+                <p class="text-accent-1 font-medium mb-2">Robotics Startup • 2019 - 2020</p>
+                <p class="text-text-primary/80 leading-relaxed">
+                  Built real-time sensor fusion systems for autonomous navigation, combining LiDAR, 
+                  camera, and IMU data for robust robotic perception.
+                </p>
+              </div>
+              <div class="text-text-primary/60 text-sm">
+                2019 - 2020
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Education -->
+    <section class="py-20 px-6 bg-text-primary/5">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold text-text-primary mb-12 text-center">Education</h2>
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="card text-center">
+            <h3 class="text-xl font-semibold text-text-primary mb-2">M.S. Computer Science</h3>
+            <p class="text-accent-1 font-medium mb-4">University Name • 2018 - 2020</p>
+            <p class="text-text-primary/80 leading-relaxed">
+              Specialized in Robotics and Artificial Intelligence. Thesis on "Deep Learning for 
+              Robotic Manipulation in Unstructured Environments."
+            </p>
+          </div>
+          
+          <div class="card text-center">
+            <h3 class="text-xl font-semibold text-text-primary mb-2">B.S. Computer Engineering</h3>
+            <p class="text-accent-1 font-medium mb-4">University Name • 2014 - 2018</p>
+            <p class="text-text-primary/80 leading-relaxed">
+              Graduated Magna Cum Laude. Focus on embedded systems and robotics. Senior project 
+              on autonomous drone navigation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-bg-primary border-t border-text-primary/10 py-12 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="text-text-primary/70 mb-4 md:mb-0">
+          © 2024 Kunal Aneja. All rights reserved.
+        </div>
+        <div class="flex space-x-6">
+          <a href="mailto:hello@kunalaneja.com" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            Email
+          </a>
+          <a href="https://github.com/kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            GitHub
+          </a>
+          <a href="https://linkedin.com/in/kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            LinkedIn
+          </a>
+          <a href="https://scholar.google.com/citations?user=kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            Google Scholar
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="/src/assets/js/main.js"></script>
+</body>
+</html>

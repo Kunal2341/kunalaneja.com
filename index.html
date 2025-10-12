@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kunal Aneja - Robotics • RL • Embodied AI</title>
+  <meta name="description" content="Robotics researcher and engineer specializing in reinforcement learning and embodied AI. Building the future of intelligent robotic systems.">
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kunalaneja.com/">
+  <meta property="og:title" content="Kunal Aneja - Robotics • RL • Embodied AI">
+  <meta property="og:description" content="Robotics researcher and engineer specializing in reinforcement learning and embodied AI.">
+  <meta property="og:image" content="https://kunalaneja.com/assets/img/og-image.jpg">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://kunalaneja.com/">
+  <meta property="twitter:title" content="Kunal Aneja - Robotics • RL • Embodied AI">
+  <meta property="twitter:description" content="Robotics researcher and engineer specializing in reinforcement learning and embodied AI.">
+  <meta property="twitter:image" content="https://kunalaneja.com/assets/img/og-image.jpg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <!-- Background Canvas -->
+  <canvas id="background-canvas" class="fixed inset-0 w-full h-full -z-10"></canvas>
+  
+  <!-- Skip to content link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-accent-1 text-bg-primary px-4 py-2 rounded-md z-50">
+    Skip to content
+  </a>
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-40 backdrop-blur-md bg-bg-primary/80 border-b border-text-primary/10">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl font-bold text-text-primary hover:text-accent-2 transition-colors">
+          Kunal Aneja
+        </a>
+        <div class="hidden md:flex space-x-8">
+          <a href="/projects/" class="text-text-primary hover:text-accent-2 transition-colors">Projects</a>
+          <a href="/research/" class="text-text-primary hover:text-accent-2 transition-colors">Research</a>
+          <a href="/notes/" class="text-text-primary hover:text-accent-2 transition-colors">Notes</a>
+          <a href="/about/" class="text-text-primary hover:text-accent-2 transition-colors">About</a>
+          <a href="/contact/" class="text-text-primary hover:text-accent-2 transition-colors">Contact</a>
+        </div>
+        <button class="md:hidden text-text-primary" id="mobile-menu-toggle">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main-content" class="min-h-screen pt-20">
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center px-6">
+      <div class="max-w-4xl mx-auto text-center">
+        <h1 class="text-5xl md:text-7xl font-extrabold text-text-primary mb-6 animate-fade-in">
+          Kunal Aneja
+        </h1>
+        <p class="text-xl md:text-2xl text-text-primary/80 mb-8 animate-slide-up">
+          Robotics • Reinforcement Learning • Embodied AI
+        </p>
+        <p class="text-lg text-text-primary/70 max-w-2xl mx-auto mb-12 animate-slide-up">
+          Building intelligent robotic systems that learn, adapt, and interact with the physical world. 
+          Passionate about advancing the frontier of embodied artificial intelligence.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
+          <a href="/projects/" class="bg-accent-1 text-bg-primary px-8 py-3 rounded-lg font-semibold hover:bg-accent-1/90 transition-colors">
+            View Projects
+          </a>
+          <a href="/research/" class="border border-text-primary/30 text-text-primary px-8 py-3 rounded-lg font-semibold hover:bg-text-primary/10 transition-colors">
+            Research
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Work Section -->
+    <section class="py-20 px-6">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-12 text-center">Featured Work</h2>
+        <div id="featured-projects" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- Projects will be loaded dynamically -->
+        </div>
+        <div class="text-center mt-12">
+          <a href="/projects/" class="text-accent-2 hover:text-accent-2/80 font-semibold">
+            View All Projects →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Latest Section -->
+    <section class="py-20 px-6 bg-text-primary/5">
+      <div class="max-w-6xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-12">
+          <!-- Latest Research -->
+          <div>
+            <h2 class="text-3xl font-bold text-text-primary mb-8">Latest Research</h2>
+            <div id="latest-research">
+              <!-- Research will be loaded dynamically -->
+            </div>
+            <a href="/research/" class="text-accent-2 hover:text-accent-2/80 font-semibold">
+              View All Research →
+            </a>
+          </div>
+          
+          <!-- Latest Notes -->
+          <div>
+            <h2 class="text-3xl font-bold text-text-primary mb-8">Latest Notes</h2>
+            <div id="latest-notes">
+              <!-- Notes will be loaded dynamically -->
+            </div>
+            <a href="/notes/" class="text-accent-2 hover:text-accent-2/80 font-semibold">
+              View All Notes →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bio Section -->
+    <section class="py-20 px-6">
+      <div class="max-w-4xl mx-auto text-center">
+        <div class="bg-text-primary/5 backdrop-blur-sm rounded-2xl p-12">
+          <p class="text-lg text-text-primary/80 mb-8 leading-relaxed">
+            I'm a robotics researcher and engineer passionate about developing intelligent systems 
+            that can learn, adapt, and interact with the physical world. My work focuses on 
+            reinforcement learning, computer vision, and embodied AI, with applications in 
+            robotic manipulation, autonomous navigation, and human-robot interaction.
+          </p>
+          <a href="/about/" class="bg-accent-2 text-bg-primary px-6 py-3 rounded-lg font-semibold hover:bg-accent-2/90 transition-colors">
+            Learn More About Me
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-bg-primary border-t border-text-primary/10 py-12 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="text-text-primary/70 mb-4 md:mb-0">
+          © 2024 Kunal Aneja. All rights reserved.
+        </div>
+        <div class="flex space-x-6">
+          <a href="mailto:hello@kunalaneja.com" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            Email
+          </a>
+          <a href="https://github.com/kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            GitHub
+          </a>
+          <a href="https://linkedin.com/in/kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            LinkedIn
+          </a>
+          <a href="https://scholar.google.com/citations?user=kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            Google Scholar
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="/src/assets/js/main.js"></script>
+</body>
+</html>

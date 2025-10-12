@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "2024-12-15-rl-fundamentals",
+    "title": "Reinforcement Learning Fundamentals for Robotics",
+    "date": "2024-12-15",
+    "excerpt": "A comprehensive overview of RL concepts specifically tailored for robotic applications, covering policy gradients, Q-learning, and actor-critic methods.",
+    "tags": ["reinforcement-learning", "robotics", "tutorial"],
+    "featured": true
+  },
+  {
+    "slug": "2024-11-28-embodied-ai-trends",
+    "title": "Trends in Embodied AI: What's Next?",
+    "date": "2024-11-28",
+    "excerpt": "Exploring the latest developments in embodied AI research and predicting future directions in the field.",
+    "tags": ["embodied-ai", "research", "trends"],
+    "featured": true
+  },
+  {
+    "slug": "2024-10-12-computer-vision-tips",
+    "title": "Computer Vision Tips for Robotic Applications",
+    "date": "2024-10-12",
+    "excerpt": "Practical insights on implementing computer vision systems for robots, including sensor selection and preprocessing techniques.",
+    "tags": ["computer-vision", "robotics", "tips"],
+    "featured": false
+  }
+]

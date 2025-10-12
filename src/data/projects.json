@@ -1,0 +1,61 @@
+[
+  {
+    "slug": "amplify",
+    "title": "AMPLIFY: Actionless Video Dynamics",
+    "date": "2024-12-01",
+    "summary": "Inverse dynamics over actionless priors achieving +42% improvement in final pose accuracy",
+    "role": "Lead Researcher",
+    "stack": ["PyTorch", "Isaac Lab", "Computer Vision"],
+    "links": {
+      "code": "https://github.com/kunalaneja/amplify",
+      "paper": "https://arxiv.org/abs/2024.xxxxx"
+    },
+    "thumb": "/assets/img/projects/amplify-cover.jpg",
+    "featured": true,
+    "tags": ["robotics", "computer-vision", "machine-learning"]
+  },
+  {
+    "slug": "embodied-ai-framework",
+    "title": "Modular Embodied AI Framework",
+    "date": "2024-08-01",
+    "summary": "Scalable framework for training embodied agents with multi-modal perception",
+    "role": "Research Engineer",
+    "stack": ["Python", "ROS2", "TensorFlow", "Gazebo"],
+    "links": {
+      "code": "https://github.com/kunalaneja/embodied-ai-framework",
+      "demo": "https://youtube.com/watch?v=example"
+    },
+    "thumb": "/assets/img/projects/embodied-ai-cover.jpg",
+    "featured": true,
+    "tags": ["robotics", "ai", "framework"]
+  },
+  {
+    "slug": "robotic-manipulation",
+    "title": "Deep Reinforcement Learning for Robotic Manipulation",
+    "date": "2024-05-01",
+    "summary": "End-to-end RL pipeline for complex manipulation tasks with 85% success rate",
+    "role": "ML Engineer",
+    "stack": ["PyTorch", "OpenAI Gym", "MuJoCo"],
+    "links": {
+      "code": "https://github.com/kunalaneja/robotic-manipulation",
+      "paper": "https://arxiv.org/abs/2024.xxxxx"
+    },
+    "thumb": "/assets/img/projects/manipulation-cover.jpg",
+    "featured": true,
+    "tags": ["reinforcement-learning", "robotics", "manipulation"]
+  },
+  {
+    "slug": "sensor-fusion",
+    "title": "Multi-Modal Sensor Fusion for Autonomous Navigation",
+    "date": "2024-02-01",
+    "summary": "Real-time fusion of LiDAR, camera, and IMU data for robust autonomous navigation",
+    "role": "Software Engineer",
+    "stack": ["C++", "ROS2", "OpenCV", "PCL"],
+    "links": {
+      "code": "https://github.com/kunalaneja/sensor-fusion"
+    },
+    "thumb": "/assets/img/projects/sensor-fusion-cover.jpg",
+    "featured": false,
+    "tags": ["robotics", "sensor-fusion", "autonomous-navigation"]
+  }
+]

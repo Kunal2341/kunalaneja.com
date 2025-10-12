@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects - Kunal Aneja</title>
+  <meta name="description" content="Explore my portfolio of robotics, machine learning, and embodied AI projects including AMPLIFY, robotic manipulation, and sensor fusion systems.">
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kunalaneja.com/projects/">
+  <meta property="og:title" content="Projects - Kunal Aneja">
+  <meta property="og:description" content="Explore my portfolio of robotics, machine learning, and embodied AI projects.">
+  <meta property="og:image" content="https://kunalaneja.com/assets/img/og-image.jpg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <!-- Background Canvas -->
+  <canvas id="background-canvas" class="fixed inset-0 w-full h-full -z-10"></canvas>
+  
+  <!-- Skip to content link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-accent-1 text-bg-primary px-4 py-2 rounded-md z-50">
+    Skip to content
+  </a>
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-40 backdrop-blur-md bg-bg-primary/80 border-b border-text-primary/10">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl font-bold text-text-primary hover:text-accent-2 transition-colors">
+          Kunal Aneja
+        </a>
+        <div class="hidden md:flex space-x-8">
+          <a href="/projects/" class="text-accent-2 font-medium">Projects</a>
+          <a href="/research/" class="text-text-primary hover:text-accent-2 transition-colors">Research</a>
+          <a href="/notes/" class="text-text-primary hover:text-accent-2 transition-colors">Notes</a>
+          <a href="/about/" class="text-text-primary hover:text-accent-2 transition-colors">About</a>
+          <a href="/contact/" class="text-text-primary hover:text-accent-2 transition-colors">Contact</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main-content" class="min-h-screen pt-20">
+    <!-- Header -->
+    <section class="py-20 px-6">
+      <div class="max-w-4xl mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-text-primary mb-6">Projects</h1>
+        <p class="text-xl text-text-primary/80 max-w-2xl mx-auto">
+          A collection of my work in robotics, machine learning, and embodied AI. 
+          Each project represents a step forward in building intelligent robotic systems.
+        </p>
+      </div>
+    </section>
+
+    <!-- Projects Grid -->
+    <section class="py-12 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- Projects will be loaded dynamically -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-bg-primary border-t border-text-primary/10 py-12 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="text-text-primary/70 mb-4 md:mb-0">
+          © 2024 Kunal Aneja. All rights reserved.
+        </div>
+        <div class="flex space-x-6">
+          <a href="mailto:hello@kunalaneja.com" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            Email
+          </a>
+          <a href="https://github.com/kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            GitHub
+          </a>
+          <a href="https://linkedin.com/in/kunalaneja" class="text-text-primary/70 hover:text-accent-2 transition-colors">
+            LinkedIn
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="/src/assets/js/projects.js"></script>
+</body>
+</html>
