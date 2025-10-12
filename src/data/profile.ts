@@ -55,7 +55,7 @@ export const profile = {
       authors: "Kunal Aneja, ..., Animesh Garg",
       venue: "Projected RSS 2026",
       year: "2026",
-      image: "/i2g2ro_combined_final.gif",
+      image: "/i2g2ro_vid.gif",
       status: "in_progress",
       lab: "PAIR Lab",
       labUrl: "https://www.pair.toronto.edu/",
@@ -69,7 +69,7 @@ export const profile = {
       authors: "Jeremy A. Collins*, Loránd Cheng*, Kunal Aneja, Albert Wilcox, Benjamin Joffe, Animesh Garg",
       venue: "ICRA 2025",
       year: "2025",
-      image: "/AMPLIFY.mp4",
+      image: "/amplify_vid.mp4",
       lab: "PAIR Lab",
       labUrl: "https://www.pair.toronto.edu/",
       links: [
@@ -83,7 +83,7 @@ export const profile = {
       authors: "Hrish Leen, Jeremy A. Collins, Kunal Aneja, Nhi Nguyen, Priyadarshini Tamilselvan, Sri Siddarth Chakaravarthy P, Animesh Garg",
       venue: "CoRL 2025 Workshop",
       year: "2025",
-      image: "/combined_trajectory_natural.gif",
+      image: "/flash_vid.gif",
       lab: "PAIR Lab",
       labUrl: "https://www.pair.toronto.edu/",
       links: [
@@ -96,7 +96,7 @@ export const profile = {
       authors: "Hrishit Leen*, Kunal Aneja*, Chetan Reddy, Priyadarshini Tamilselvan, Sri Siddarth Chakaravarthy, Nhi Nguyen, Jeremy Collins, Miroslav Bogdanovic, Animesh Garg",
       venue: "Advanced Robotics Journal",
       year: "2025",
-      image: "/OverallFigure (1).png",
+      image: "/survey_img.png",
       lab: "PAIR Lab",
       labUrl: "https://www.pair.toronto.edu/",
       links: [
@@ -110,7 +110,7 @@ export const profile = {
       authors: "Patrick Grady, Jeremy A. Collins, Chengcheng Tang, Christopher D. Twigg, Kunal Aneja, James Hays, Charles C. Kemp",
       venue: "WACV 2024",
       year: "2024",
-      image: "/pressurevision_highlights_premium.gif",
+      image: "/pressurevision_vid.gif",
       lab: "HRL Lab",
       labUrl: "https://www.hrl.gatech.edu/",
       links: [
