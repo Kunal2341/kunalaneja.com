@@ -96,6 +96,7 @@ export const profile = {
       authors: "Hrishit Leen*, Kunal Aneja*, Chetan Reddy, Priyadarshini Tamilselvan, Sri Siddarth Chakaravarthy, Nhi Nguyen, Jeremy Collins, Miroslav Bogdanovic, Animesh Garg",
       venue: "Advanced Robotics Journal",
       year: "2025",
+      image: "/OverallFigure (1).png",
       lab: "PAIR Lab",
       labUrl: "https://www.pair.toronto.edu/",
       links: [

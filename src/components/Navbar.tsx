@@ -20,8 +20,8 @@ export default function Navbar() {
               alt="Logo" 
               className="w-8 h-8 rounded-lg"
             />
-            <span className="text-white/90">Kunal</span>
-            <span className="text-white/60">Aneja</span>
+            <span className="text-white font-bold">Kunal</span>
+            <span className="text-white font-bold">Aneja</span>
           </a>
           <nav className="hidden md:flex gap-6 text-sm text-white/70">
             {links.map(l => (

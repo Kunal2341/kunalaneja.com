@@ -81,6 +81,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Moving goal (single shared), shown by default
     let goal = { x: Math.floor(nx * 0.75), y: Math.floor(ny * 0.5) };
+    let goalVelocity = { dx: 0.03, dy: 0.02 }; // even slower movement speed
     let showGoal = true;
     
     // Auto-spawn timer
@@ -218,6 +219,36 @@ export default function AgentGridRLBackground({ children }: Props) {
       goal.y = randint(1, ny - 2);
       emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.35); // tiny pulse
     }
+    
+    function updateGoalPosition() {
+      // Add small random changes to velocity occasionally
+      if (Math.random() < 0.02) { // 2% chance each frame
+        goalVelocity.dx += (Math.random() - 0.5) * 0.01;
+        goalVelocity.dy += (Math.random() - 0.5) * 0.01;
+        
+        // Clamp velocity to reasonable range
+        goalVelocity.dx = Math.max(-0.05, Math.min(0.05, goalVelocity.dx));
+        goalVelocity.dy = Math.max(-0.05, Math.min(0.05, goalVelocity.dy));
+      }
+      
+      // Update goal position with velocity
+      goal.x += goalVelocity.dx;
+      goal.y += goalVelocity.dy;
+      
+      // Bounce off edges with some randomness
+      if (goal.x <= 1 || goal.x >= nx - 2) {
+        goalVelocity.dx = -goalVelocity.dx * (0.8 + Math.random() * 0.4); // random bounce strength
+        goal.x = Math.max(1, Math.min(nx - 2, goal.x));
+      }
+      if (goal.y <= 1 || goal.y >= ny - 2) {
+        goalVelocity.dy = -goalVelocity.dy * (0.8 + Math.random() * 0.4); // random bounce strength
+        goal.y = Math.max(1, Math.min(ny - 2, goal.y));
+      }
+      
+      // Keep goal within bounds
+      goal.x = Math.max(1, Math.min(nx - 2, goal.x));
+      goal.y = Math.max(1, Math.min(ny - 2, goal.y));
+    }
 
     // Policy helpers
     function argmax4(q0: number, q1: number, q2: number, q3: number) {
@@ -277,7 +308,11 @@ export default function AgentGridRLBackground({ children }: Props) {
       // Rewards
       let r = -0.01;
       if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) r -= 0.02;
-      const reached = (nxp === goal.x && nyp === goal.y);
+      
+      // Check if agent reached goal (with tolerance for smooth movement)
+      const goalGridX = Math.floor(goal.x + 0.5); // round to nearest grid cell
+      const goalGridY = Math.floor(goal.y + 0.5);
+      const reached = (nxp === goalGridX && nyp === goalGridY);
       if (reached) r += 1.0;
 
       // TD update
@@ -391,20 +426,31 @@ export default function AgentGridRLBackground({ children }: Props) {
         ctx.stroke();
       }
 
-      // Goal marker
+      // Goal marker - bigger red target
       if (showGoal) {
         const gx = goal.x * spacingX + spacingX / 2;
         const gy = goal.y * spacingY + spacingY / 2;
-        const rad = 12 + 6 * Math.sin(t * 2.2); // much bigger and more pulsing
+        const rad = 18 + 8 * Math.sin(t * 2.2); // bigger and more pulsing
+        
+        // Outer ring (target outline)
         ctx.beginPath();
-        ctx.arc(gx, gy, rad, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 100, 255, 0.9)"; // bright magenta color
-        ctx.fill();
+        ctx.arc(gx, gy, rad + 12, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)"; // white outer ring
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        // Middle ring (red)
         ctx.beginPath();
-        ctx.arc(gx, gy, rad + 15, 0, Math.PI * 2); // larger outer ring
-        ctx.strokeStyle = "rgba(255, 255, 0, 0.4)"; // bright yellow outer ring
+        ctx.arc(gx, gy, rad + 6, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 100, 100, 0.8)"; // red middle ring
         ctx.lineWidth = 3;
         ctx.stroke();
+        
+        // Center circle (bright red)
+        ctx.beginPath();
+        ctx.arc(gx, gy, rad, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255, 80, 80, 0.95)"; // bright red center
+        ctx.fill();
       }
 
       ctx.restore();
@@ -544,6 +590,9 @@ export default function AgentGridRLBackground({ children }: Props) {
         // Add a small pulse at spawn location
         emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.0);
       }
+
+      // Update goal position with smooth bouncing
+      updateGoalPosition();
 
       // RL: fewer steps per frame (subtle)
       for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);
