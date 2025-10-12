@@ -1,8 +1,8 @@
-# Kunal Aneja — Portfolio
+# Kunal Portfolio
 
 A modern, interactive portfolio website showcasing research in robotics and reinforcement learning, featuring a dynamic Q-learning canvas background with interactive agents.
 
-![Portfolio Preview](public/OverallFigure%20(1).png)
+![Portfolio Preview](public/survey_img.png)
 
 ## 🚀 Quickstart
 
@@ -48,7 +48,11 @@ PersonalWebsite/
 │   ├── main.tsx                 # React entry point
 │   └── index.css                # Global styles + Tailwind imports
 ├── public/                      # Static assets
-│   ├── *.gif, *.mp4, *.png     # Research media files
+│   ├── amplify_vid.mp4          # AMPLIFY project video
+│   ├── flash_vid.gif            # FLASH project video
+│   ├── i2g2ro_vid.gif           # I2G2RO project video
+│   ├── pressurevision_vid.gif   # PressureVision project video
+│   ├── survey_img.png           # Survey project image
 │   ├── resume.pdf               # Downloadable resume
 │   ├── favicon.svg              # Site icon
 │   ├── logo.svg                 # Brand logo
@@ -128,14 +132,14 @@ All content is managed in `src/data/profile.ts` with TypeScript interfaces:
 // Example data structure
 export const profile = {
   name: "Kunal Aneja",
-  tagline: "Research Engineer • RL + Systems • Interactive AI",
+  tagline: "Research Engineer • RL • VLA • Robotics",
   publications: [
     {
       title: "I2G2RO: Image to Grasp to Reorient",
       authors: "Kunal Aneja, ..., Animesh Garg",
       venue: "Projected RSS 2026",
       year: "2026",
-      image: "/i2g2ro_combined_final.gif",
+      image: "/i2g2ro_vid.gif",
       links: [
         { label: "Website", href: "https://github.com/pairlab/IsaacLab/" }
       ]
@@ -148,10 +152,17 @@ export const profile = {
 ```
 
 ### Media Assets
-- **Research Videos**: MP4 format with autoplay and loop
-- **GIFs**: High-quality animated demonstrations
-- **Images**: PNG/JPEG for diagrams and figures
-- **PDFs**: Resume and supplementary documents
+- **Research Videos**: MP4 format with autoplay and loop (`amplify_vid.mp4`)
+- **GIFs**: High-quality animated demonstrations (`flash_vid.gif`, `i2g2ro_vid.gif`, `pressurevision_vid.gif`)
+- **Images**: PNG/JPEG for diagrams and figures (`survey_img.png`)
+- **PDFs**: Resume and supplementary documents (`resume.pdf`)
+
+### Asset Naming Convention
+All media files follow a standardized naming pattern:
+- `{projectname}_vid.{ext}` - Project demonstration videos
+- `{projectname}_img.{ext}` - Project diagrams and figures
+- `resume.pdf` - Downloadable resume
+- `favicon.svg`, `logo.svg` - Brand assets
 
 ## 🛠️ Development Workflow
 
@@ -174,8 +185,14 @@ npx eslint src/
 ### Content Updates
 1. **Publications**: Edit `src/data/profile.ts` → `publications` array
 2. **Projects**: Update `projects` array with new entries
-3. **Media**: Add files to `public/` directory
+3. **Media**: Add files to `public/` directory following naming convention
 4. **Styling**: Modify `tailwind.config.js` or `src/index.css`
+
+### Asset Management
+- **Add New Media**: Follow `{projectname}_vid.{ext}` or `{projectname}_img.{ext}` pattern
+- **Update References**: Modify image paths in `src/data/profile.ts`
+- **Optimize Files**: Compress videos/GIFs for web delivery
+- **Test Locally**: Verify all assets load correctly with `npm run dev`
 
 ### Build Process
 ```bash
@@ -327,6 +344,15 @@ This project is open source and available under the [MIT License](LICENSE).
 - **GitHub**: [github.com/Kunal2341](https://github.com/Kunal2341)
 - **Research**: [PAIR Lab](https://www.pair.toronto.edu/)
 - **LinkedIn**: [linkedin.com/in/kunal-aneja](https://www.linkedin.com/in/kunal-aneja/)
+- **Google Scholar**: [scholar.google.com/citations?user=Faop3qAAAAAJ](https://scholar.google.com/citations?user=Faop3qAAAAAJ&hl=en)
+
+## 📋 Recent Updates
+
+- ✅ **Website Title**: Updated to "Kunal Portfolio"
+- ✅ **Asset Organization**: Standardized naming convention (`projname_vid/img`)
+- ✅ **RL Background**: Enhanced with smooth goal movement and collision detection
+- ✅ **Research Content**: Added latest publications (AMPLIFY, FLASH, PressureVision++, Survey)
+- ✅ **Interactive Features**: Click-to-spawn agents, keyboard controls, info modal
 
 ---
 
