@@ -67,6 +67,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     const DPR = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
     let W = 0, H = 0;
     function resize() {
+      if (!canvas || !ctx) return;
       W = window.innerWidth;
       H = window.innerHeight;
       canvas.width = Math.floor(W * DPR);
@@ -311,6 +312,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     function stepAgent(a: typeof agents[number]) {
       // (Re-)dimension safeguard
+      if (!canvas) return;
       const expectedNx = Math.max(8, Math.floor(canvas.clientWidth / cellPx));
       const expectedNy = Math.max(6, Math.floor(canvas.clientHeight / cellPx));
       if (expectedNx !== nx || expectedNy !== ny) {
@@ -429,6 +431,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Draw grid as warped polylines ----------------------------------------
     function drawGrid(t: number) {
+      if (!ctx) return;
       ctx.save();
       // Background gradient (slightly darker)
       const grad = ctx.createLinearGradient(0, 0, 0, H);
@@ -447,6 +450,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       const amp = BG_WARP_AMP;
       const samples = 24; // fewer samples → smoother
 
+      if (!ctx) return;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
@@ -463,6 +467,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           const py = y;
           if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
+        if (!ctx) continue;
         const a = 0.18 + 0.35 * Math.pow(i / nx, 1.1);
         ctx.strokeStyle = `rgba(170, 230, 255, ${a})`;
         ctx.lineWidth = 0.8 + 1.4 * Math.pow(Math.abs(i - nx * 0.5) / (nx * 0.5), 0.7);
@@ -483,6 +488,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           const py = y0 + field * (0.6 + 0.5 * d);
           if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
+        if (!ctx) continue;
         const a = 0.16 + 0.4 * Math.pow(j / ny, 1.1);
         ctx.strokeStyle = `rgba(255, 140, 240, ${a})`;
         ctx.lineWidth = 0.8 + 1.8 * Math.pow(j / ny, 1.8);
@@ -491,7 +497,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       }
 
       // Goal marker - bigger red target
-      if (showGoal) {
+      if (showGoal && ctx) {
         const gx = goal.x * spacingX + spacingX / 2;
         const gy = goal.y * spacingY + spacingY / 2;
         const rad = 18 + 8 * Math.sin(t * 2.2); // bigger and more pulsing
@@ -522,6 +528,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Draw agents + glow trails -------------------------------------------
     function drawAgents(_t: number) {
+      if (!ctx) return;
       const spacingX = W / nx;
       const spacingY = H / ny;
 
