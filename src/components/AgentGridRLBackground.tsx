@@ -41,6 +41,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.025, // goal movement speed (fixed)
     autoSpawnRate: 3000, // milliseconds between auto-spawns (fixed)
+    rewardMode: 0, // 0=basic, 1=advanced, 2=crazy
   });
 
   useEffect(() => {
@@ -50,8 +51,8 @@ export default function AgentGridRLBackground({ children }: Props) {
     if (!ctx) return;
 
     // --- Tunables for subtle vibe ---
-    const MAX_RIPPLE = 28;            // allow larger user pulses
-    const BG_WARP_AMP = 7;            // base warp amplitude (subtle but flowing)
+    const MAX_RIPPLE = 45;            // allow larger user pulses
+    const BG_WARP_AMP = 15;            // base warp amplitude (subtle but flowing)
     let RL_STEPS = controls.stepSpeed; // dynamic agent motion speed
     const AUTOPULSE_PERIOD = 7.5;     // seconds between quiet auto pulses
 
@@ -105,6 +106,12 @@ export default function AgentGridRLBackground({ children }: Props) {
       goalsReached: 0, // track individual agent performance
       steps: 0, // track steps taken by this agent
       totalReward: 0, // track cumulative reward
+      birthTime: performance.now(), // Track when agent was created
+      lifespan: 40000, // 40 seconds in milliseconds
+      isSpawned: false, // Mark as initial agent (permanent)
+      speedBoost: false, // Speed boost mode
+      originalEps: 0.2, // Store original epsilon for speed boost
+      originalAlpha: 0.22, // Store original alpha for speed boost
     }));
     
     // Global statistics tracking
@@ -136,11 +143,57 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Keyboard toggles
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "g" || e.key === "G") showGoal = !showGoal;
-      if (e.key === "r" || e.key === "R") agents.forEach(a => a.modeChaos = !a.modeChaos);
-      if (e.key === "f" || e.key === "F") agents.forEach(a => a.modeFlock = !a.modeFlock);
+      // Only handle our keys if not typing in an input field
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      // Prevent default behavior for our keys
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowInfoModal(false);
+        return;
+      }
+      if (e.key === "g" || e.key === "G") {
+        e.preventDefault();
+        showGoal = !showGoal;
+        console.log("Goal visibility toggled:", showGoal);
+      }
+      if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        const newChaosMode = !agents[0]?.modeChaos;
+        agents.forEach(a => a.modeChaos = newChaosMode);
+        console.log("Chaos mode toggled:", newChaosMode);
+      }
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        const newFlockMode = !agents[0]?.modeFlock;
+        agents.forEach(a => a.modeFlock = newFlockMode);
+        console.log("Flocking mode toggled:", newFlockMode);
+      }
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        // Toggle speed boost mode
+        const isCurrentlyBoosted = agents[0]?.speedBoost || false;
+        agents.forEach(a => {
+          a.speedBoost = !isCurrentlyBoosted;
+          if (a.speedBoost) {
+            a.originalEps = a.eps;
+            a.originalAlpha = a.alpha;
+            a.eps = Math.min(0.8, a.eps * 1.5); // Increase exploration
+            a.alpha = Math.min(0.5, a.alpha * 1.3); // Increase learning
+          } else {
+            a.eps = a.originalEps || a.eps;
+            a.alpha = a.originalAlpha || a.alpha;
+          }
+        });
+        console.log("Speed boost toggled:", !isCurrentlyBoosted);
+      }
     };
-    window.addEventListener("keydown", onKey);
+    
+    // Add keyboard event listener with capture to ensure it works
+    document.addEventListener("keydown", onKey, true);
 
     // Mouse / touch pulses
     const emitPulse = (x: number, y: number, strength = 1) => {
@@ -165,6 +218,52 @@ export default function AgentGridRLBackground({ children }: Props) {
     };
     const onLeave = () => { pointer.active = false; canvas.style.transform = ""; };
     const onDown = (e: MouseEvent) => {
+      // Only check for specific interactive UI elements, not the canvas or background
+      const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
+      
+      // Only prevent spawning if clicking on actual interactive elements (not canvas/background)
+      const hasInteractiveElement = elementsAtPoint.some(el => {
+        // Skip the canvas itself
+        if (el.tagName === 'CANVAS') return false;
+        
+        const element = el as HTMLElement;
+        
+        // Skip elements with pointerEvents: none (these should allow background clicks)
+        if (element.style?.pointerEvents === 'none') return false;
+        
+        // Skip divs, headers, and other structural elements unless they have specific interactive properties
+        if (['DIV', 'HEADER', 'MAIN', 'SECTION', 'ARTICLE', 'FOOTER', 'NAV'].includes(el.tagName)) {
+          // Skip elements with noop onclick handlers (common in React/libraries)
+          const hasOnclick = element.onclick;
+          if (hasOnclick && hasOnclick.name === 'noop') return false;
+          
+          // Skip our own content div that has the onMouseDown handler for event delegation
+          if (el.className === 'relative z-10') return false;
+          
+          // Only consider these interactive if they have direct interactive attributes or styles
+          const hasRole = element.getAttribute('role') === 'button';
+          const hasTabindex = element.getAttribute('tabindex') !== null;
+          const hasOnclickAttr = element.getAttribute('onclick') !== null;
+          
+          return hasOnclick || hasRole || hasTabindex || hasOnclickAttr;
+        }
+        
+        // Check for truly interactive elements
+        return el.tagName === 'BUTTON' || 
+               el.tagName === 'INPUT' || 
+               el.tagName === 'SELECT' ||
+               el.tagName === 'A' ||
+               el.closest('button') ||
+               el.closest('input') ||
+               el.closest('select') ||
+               el.closest('a[href]') ||
+               el.closest('[role="button"]') ||
+               el.closest('.modal') ||
+               el.closest('[data-modal]') ||
+               element.onclick;
+      });
+      
+      if (hasInteractiveElement) return;
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left);
       const y = (e.clientY - rect.top);
@@ -180,6 +279,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       const clampedX = Math.max(0, Math.min(nx - 1, gridX));
       const clampedY = Math.max(0, Math.min(ny - 1, gridY));
       
+      
       // Create new agent with random properties
       const newAgent = {
         x: clampedX,
@@ -194,18 +294,66 @@ export default function AgentGridRLBackground({ children }: Props) {
         goalsReached: 0,
         steps: 0,
         totalReward: 0,
+        birthTime: performance.now(), // Track when agent was created
+        lifespan: 40000, // 40 seconds in milliseconds (only applies if >5 agents)
+        isSpawned: true, // Mark as user-spawned (not initial)
+        speedBoost: false, // Speed boost mode
+        originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
+        originalAlpha: controls.learningRate, // Store original alpha
       };
       
       agents.push(newAgent);
       
-      // Limit total agents to prevent performance issues
-      if (agents.length > 10) {
-        agents.splice(0, agents.length - 10);
-      }
+      // No limits - spawn as many agents as you want!
     };
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
       if (!t) return;
+      
+      // Only check for specific interactive UI elements, not the canvas or background
+      const elementsAtPoint = document.elementsFromPoint(t.clientX, t.clientY);
+      
+      // Only prevent spawning if touching actual interactive elements (not canvas/background)
+      const hasInteractiveElement = elementsAtPoint.some(el => {
+        // Skip the canvas itself
+        if (el.tagName === 'CANVAS') return false;
+        
+        // Skip elements with pointerEvents: none (these should allow background touches)
+        const element = el as HTMLElement;
+        if (element.style?.pointerEvents === 'none') return false;
+        
+        // Skip divs, headers, and other structural elements unless they have specific interactive properties
+        if (['DIV', 'HEADER', 'MAIN', 'SECTION', 'ARTICLE', 'FOOTER', 'NAV'].includes(el.tagName)) {
+          // Only consider these interactive if they have specific interactive attributes or styles
+          if (element.onclick || 
+              element.getAttribute('role') === 'button' ||
+              element.closest('button') ||
+              element.closest('a[href]') ||
+              element.closest('[role="button"]')) {
+            return true;
+          }
+          return false; // Skip structural elements
+        }
+        
+        // Check for truly interactive elements
+        return el.tagName === 'BUTTON' || 
+               el.tagName === 'INPUT' || 
+               el.tagName === 'SELECT' ||
+               el.tagName === 'A' ||
+               el.closest('button') ||
+               el.closest('input') ||
+               el.closest('select') ||
+               el.closest('a[href]') ||
+               el.closest('[role="button"]') ||
+               el.closest('.modal') ||
+               el.closest('[data-modal]') ||
+               element.onclick;
+      });
+      
+      if (hasInteractiveElement) {
+        return;
+      }
+      
       const rect = canvas.getBoundingClientRect();
       const x = t.clientX - rect.left;
       const y = t.clientY - rect.top;
@@ -233,19 +381,23 @@ export default function AgentGridRLBackground({ children }: Props) {
         goalsReached: 0,
         steps: 0,
         totalReward: 0,
+        birthTime: performance.now(),
+        lifespan: 40000,
+        isSpawned: true,
+        speedBoost: false,
+        originalEps: controls.explorationRate + Math.random() * 0.25,
+        originalAlpha: controls.learningRate,
       };
       
       agents.push(newAgent);
-      
-      if (agents.length > 10) {
-        agents.splice(0, agents.length - 10);
-      }
     };
 
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("mouseleave", onLeave);
     canvas.addEventListener("mousedown", onDown);
     canvas.addEventListener("touchstart", onTouchStart, { passive: true } as any);
+    
+    // Debug: Log that event listeners are attached
 
     // Periodic auto pulse (gentle and rare)
     let autoPulseT = 0;
@@ -362,16 +514,59 @@ export default function AgentGridRLBackground({ children }: Props) {
       const nxp = clamp(a.x + dx, 0, nx - 1);
       const nyp = clamp(a.y + dy, 0, ny - 1);
 
-      // Rewards
-      let r = -0.01;
-      if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) r -= 0.02;
+      // Rewards - Basic vs Advanced system
+      let r = -0.01; // Small time penalty
+      
+      if (controls.rewardMode === 1) {
+        // Advanced Reward System
+        // Distance-based reward (closer to goal = higher reward)
+        const goalGridX = Math.floor(goal.x + 0.5);
+        const goalGridY = Math.floor(goal.y + 0.5);
+        const distanceToGoal = Math.abs(nxp - goalGridX) + Math.abs(nyp - goalGridY);
+        const maxDistance = nx + ny; // Manhattan distance across entire grid
+        const distanceReward = (1.0 - distanceToGoal / maxDistance) * 0.05; // 0.05 max reward for being close
+        
+        // Wall penalty (stronger in advanced mode)
+        if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) {
+          r -= 0.2; // Stronger wall penalty
+        }
+        
+        // Efficiency bonus (reward for taking fewer steps to reach goal)
+        const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.025 - (a.steps * 0.0005)) : 0;
+        
+        r += distanceReward + efficiencyBonus;
+      } else if (controls.rewardMode === 2) {
+        // Crazy Reward System
+        const goalGridX = Math.floor(goal.x + 0.5);
+        const goalGridY = Math.floor(goal.y + 0.5);
+        const distanceToGoal = Math.abs(nxp - goalGridX) + Math.abs(nyp - goalGridY);
+        const maxDistance = nx + ny;
+        
+        // Multiple reward types
+        const distanceReward = (1.0 - distanceToGoal / maxDistance) * 0.1; // 0.1 max
+        const speedReward = a.steps > 0 ? Math.max(0, 0.03 - (a.steps * 0.0003)) : 0; // Speed bonus
+        const explorationReward = Math.random() * 0.02; // Random exploration bonus
+        const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.05 - (a.steps * 0.0005)) : 0;
+        
+        // Multi-goal bonus (if reaching multiple goals quickly)
+        const multiGoalBonus = a.goalsReached > 1 ? 0.15 : 0;
+        
+        if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) {
+          r -= 0.5; // Much stronger wall penalty
+        }
+        
+        r += distanceReward + speedReward + explorationReward + efficiencyBonus + multiGoalBonus;
+      } else {
+        // Basic Reward System
+        if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) r -= 0.02;
+      }
       
       // Check if agent reached goal (with tolerance for smooth movement)
       const goalGridX = Math.floor(goal.x + 0.5); // round to nearest grid cell
       const goalGridY = Math.floor(goal.y + 0.5);
       const reached = (nxp === goalGridX && nyp === goalGridY);
       if (reached) {
-        r += 1.0;
+        r += controls.rewardMode === 0 ? 1.0 : controls.rewardMode === 1 ? 2.0 : 4.0; // Higher reward in advanced/crazy mode
         a.goalsReached++;
         globalStats.totalGoals++;
         globalStats.lastGoalTime = performance.now();
@@ -399,6 +594,9 @@ export default function AgentGridRLBackground({ children }: Props) {
       if (reached) {
         emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.6);
         moveGoal();
+        
+        // Mark agent for death - it will be removed and replaced
+        (a as any).shouldDie = true;
       }
     }
 
@@ -616,7 +814,6 @@ export default function AgentGridRLBackground({ children }: Props) {
       for (let i = 0; i < TRAIL_MAX_LOCAL + 15; i++) { tmp.push(i); if (tmp.length > TRAIL_MAX_LOCAL) tmp.splice(0, tmp.length - TRAIL_MAX_LOCAL); }
       console.assert(tmp.length <= TRAIL_MAX_LOCAL, `trail clamp failed: len=${tmp.length} > ${TRAIL_MAX_LOCAL}`);
 
-      console.log("[AgentGridRLBackground] self-tests passed ✓");
     })();
 
     // Statistics update function
@@ -646,7 +843,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Function to spawn agents manually
     function spawnRandomAgent() {
-      if (agents.length >= 15) return; // max limit
+      // No limits - spawn as many as you want!
       
       const spawnX = Math.floor(Math.random() * nx);
       const spawnY = Math.floor(Math.random() * ny);
@@ -664,6 +861,12 @@ export default function AgentGridRLBackground({ children }: Props) {
         goalsReached: 0,
         steps: 0,
         totalReward: 0,
+        birthTime: performance.now(),
+        lifespan: 40000,
+        isSpawned: true,
+        speedBoost: false,
+        originalEps: controls.explorationRate + Math.random() * 0.25,
+        originalAlpha: controls.learningRate,
       };
       
       agents.push(newAgent);
@@ -693,7 +896,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       // Auto-spawn new agents every few seconds (update interval dynamically)
       SPAWN_INTERVAL = controls.autoSpawnRate;
-      if (now - lastSpawnTime > SPAWN_INTERVAL && agents.length < 12) {
+      if (now - lastSpawnTime > SPAWN_INTERVAL) {
         const spawnX = Math.floor(Math.random() * nx);
         const spawnY = Math.floor(Math.random() * ny);
         
@@ -710,6 +913,12 @@ export default function AgentGridRLBackground({ children }: Props) {
           goalsReached: 0,
           steps: 0,
           totalReward: 0,
+          birthTime: performance.now(),
+          lifespan: 40000,
+          isSpawned: true, // Mark as auto-spawned
+          speedBoost: false, // Speed boost mode
+          originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
+          originalAlpha: controls.learningRate, // Store original alpha
         };
         
         agents.push(newAgent);
@@ -722,9 +931,66 @@ export default function AgentGridRLBackground({ children }: Props) {
       // Update goal position with smooth bouncing
       updateGoalPosition();
 
-      // RL: dynamic steps per frame based on controls
-      RL_STEPS = controls.stepSpeed;
+      // RL: dynamic steps per frame based on controls and speed boost
+      const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
+      RL_STEPS = controls.stepSpeed * speedBoostMultiplier;
       for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);
+      
+      // Handle agent death and replacement
+      const currentTime = performance.now();
+      
+      // Remove agents that should die (reached goal or expired)
+      for (let i = agents.length - 1; i >= 0; i--) {
+        const agent = agents[i];
+        let shouldRemove = false;
+        
+        // Remove if agent reached goal (shouldDie flag)
+        if ((agent as any).shouldDie) {
+          shouldRemove = true;
+        }
+        
+        // Remove if agent is older than 40 seconds AND there are more than 5 agents
+        const age = currentTime - agent.birthTime;
+        if (age > agent.lifespan && agents.length > 5) {
+          shouldRemove = true;
+        }
+        
+        if (shouldRemove) {
+          agents.splice(i, 1);
+          
+          // If we removed an agent and still have >= 5 agents, spawn a replacement
+          if (agents.length >= 5) {
+            const spawnX = Math.floor(Math.random() * nx);
+            const spawnY = Math.floor(Math.random() * ny);
+            
+            const replacementAgent = {
+              x: spawnX,
+              y: spawnY,
+              eps: controls.explorationRate + Math.random() * 0.25,
+              alpha: controls.learningRate,
+              gamma: 0.96,
+              modeChaos: false,
+              modeFlock: true,
+              colorHue: Math.floor(Math.random() * 360),
+              trail: [] as Array<{x:number,y:number}>,
+              goalsReached: 0,
+              steps: 0,
+              totalReward: 0,
+              birthTime: currentTime,
+              lifespan: 40000,
+              isSpawned: true,
+              speedBoost: false, // Speed boost mode
+              originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
+              originalAlpha: controls.learningRate, // Store original alpha
+            };
+            
+            agents.push(replacementAgent);
+            
+            // Add a pulse at spawn location
+            emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.0);
+          }
+        }
+      }
 
       // Update statistics every 30 frames (roughly 0.5 seconds at 60fps)
       if (Math.floor(now * 60) % 30 === 0) {
@@ -742,39 +1008,75 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Expose functions to the component scope
     (window as any).spawnRandomAgent = spawnRandomAgent;
+    
+    // Debug: Add a simple click test
+    (window as any).testCanvasClick = () => {
+      const testEvent = new MouseEvent('mousedown', {
+        clientX: 100,
+        clientY: 100,
+        bubbles: true,
+        cancelable: true
+      });
+      onDown(testEvent);
+    };
+    
 
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mouseleave", onLeave);
       canvas.removeEventListener("mousedown", onDown);
       canvas.removeEventListener("touchstart", onTouchStart as any);
       canvas.style.transform = "";
       delete (window as any).spawnRandomAgent;
+      delete (window as any).testCanvasClick;
     };
   }, [controls]);
 
   return (
     <div className="relative w-full min-h-screen">
-      {/* Fixed background canvas */}
+      {/* Fixed background canvas - behind everything */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 w-full h-full block will-change-transform"
-        style={{ pointerEvents: "auto", zIndex: 0 }}
+        style={{ pointerEvents: "auto", zIndex: -1 }}
         aria-hidden="true"
       />
 
       {/* Slot your site content above the animated background */}
-      <div className="relative z-10">
-        {children}
+      <div 
+        className="relative z-10" 
+        style={{ pointerEvents: "none" }}
+        onMouseDown={(e) => {
+          // If clicking on an area with pointerEvents: none, forward the event to canvas
+          const canvas = canvasRef.current;
+          if (canvas) {
+            // Create a synthetic event for the canvas
+            const syntheticEvent = new MouseEvent('mousedown', {
+              clientX: e.clientX,
+              clientY: e.clientY,
+              bubbles: true,
+              cancelable: true
+            });
+            
+            // Dispatch to canvas
+            canvas.dispatchEvent(syntheticEvent);
+          }
+        }}
+      >
+        <div style={{ pointerEvents: "auto" }}>
+          {children}
+        </div>
       </div>
 
       {/* Info button */}
-      <div className="fixed bottom-4 right-4 z-20">
+      <div className="fixed bottom-4 right-4 z-30">
         <button 
-          onClick={() => setShowInfoModal(true)}
+          onClick={() => {
+            setShowInfoModal(true);
+          }}
           className="group relative w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all duration-200"
           title="Learn about this background"
         >
@@ -792,7 +1094,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       {/* Info Modal */}
       {showInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ zIndex: 1000 }}>
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -800,7 +1102,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           />
           
           {/* Modal Content */}
-          <div className="relative bg-black/90 border border-white/20 rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+          <div className="relative bg-black/90 border border-white/20 rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto z-[101]" style={{ zIndex: 1001 }}>
             <button
               onClick={() => setShowInfoModal(false)}
               className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
@@ -813,7 +1115,7 @@ export default function AgentGridRLBackground({ children }: Props) {
             <h3 className="text-xl font-bold text-white mb-4 pr-8">🧠 RL Background System</h3>
             
             <div className="space-y-4 text-white/80 text-sm">
-              <p>
+              <p className="text-white">
                 This background uses <strong className="text-blue-400">Q-learning</strong>, a reinforcement learning algorithm where agents learn to navigate toward goals.
               </p>
               
@@ -834,88 +1136,168 @@ export default function AgentGridRLBackground({ children }: Props) {
                     <div className="text-lg font-bold text-blue-400">{stats.totalSteps.toLocaleString()}</div>
                   </div>
                   <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Active Agents</div>
+                    <div className="text-lg font-bold text-purple-400">{stats.agentsActive}</div>
+                  </div>
+                  <div className="bg-white/5 rounded p-2">
                     <div className="text-white/60">Goals/Min</div>
-                    <div className="text-lg font-bold text-purple-400">{stats.goalsPerMinute}</div>
+                    <div className="text-lg font-bold text-yellow-400">{stats.goalsPerMinute}</div>
                   </div>
-                  <div className="bg-white/5 rounded p-2">
-                    <div className="text-white/60">Best Agent</div>
-                    <div className="text-lg font-bold text-yellow-400">{stats.bestAgentScore}</div>
-                  </div>
-                  <div className="bg-white/5 rounded p-2">
-                    <div className="text-white/60">Exploration %</div>
-                    <div className="text-lg font-bold text-orange-400">{stats.explorationRate}%</div>
-                  </div>
-                  <div className="bg-white/5 rounded p-2">
-                    <div className="text-white/60">Avg Reward</div>
-                    <div className="text-lg font-bold text-cyan-400">{stats.averageReward}</div>
-                  </div>
-                </div>
-                
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/60">Session Time:</span>
-                    <span className="text-white">{Math.floor(stats.sessionTime / 60)}:{(stats.sessionTime % 60).toString().padStart(2, '0')}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/60">Active Agents:</span>
-                    <span className="text-white">{stats.agentsActive}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/60">Avg Epsilon:</span>
-                    <span className="text-white">{stats.averageEpsilon}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-white/60">Q-Table Size:</span>
-                    <span className="text-white">{stats.qTableSize.toLocaleString()}</span>
-                  </div>
+            
                 </div>
               </div>
               
-              {/* Interactive Controls */}
-              <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-4 border border-purple-500/20">
-                <h4 className="font-bold text-white mb-3 flex items-center gap-2">
-                  🎛️ Interactive Controls
-                </h4>
+              {/* Reward System Information */}
+              <div className="bg-gradient-to-r from-emerald-900/20 to-teal-900/20 rounded-lg p-4 border border-emerald-500/20">
+                <div className="mb-3">
+                  <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+                    🎯 Reward System
+                  </h4>
+                  
+                  {/* Reward Mode Slider */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-white/70">Basic</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="1"
+                      value={controls.rewardMode}
+                      onChange={(e) => setControls(prev => ({ ...prev, rewardMode: parseInt(e.target.value) }))}
+                      className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs text-white/70">Crazy</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-xs text-white/60 mt-1">
+                    <span>Basic</span>
+                    <span>Advanced</span>
+                    <span>Crazy</span>
+                  </div>
+                </div>
                 
-                <div className="space-y-4">
+                {controls.rewardMode === 0 ? (
+                  <div className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 rounded-lg p-3 border border-blue-400/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                      <span className="text-blue-300 font-semibold text-xs">Basic Mode</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="flex justify-between bg-green-900/20 rounded px-2 py-1 border-l-2 border-green-400">
+                        <span className="text-white/80">Goal</span>
+                        <span className="text-green-400 font-bold">+1000</span>
+                      </div>
+                      <div className="flex justify-between bg-red-900/20 rounded px-2 py-1 border-l-2 border-red-400">
+                        <span className="text-white/80">Wall</span>
+                        <span className="text-red-400 font-bold">-100</span>
+                      </div>
+                      <div className="flex justify-between bg-yellow-900/20 rounded px-2 py-1 border-l-2 border-yellow-400">
+                        <span className="text-white/80">Step</span>
+                        <span className="text-yellow-400 font-bold">-1</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : controls.rewardMode === 1 ? (
+                  <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 rounded-lg p-3 border border-emerald-400/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                      <span className="text-emerald-300 font-semibold text-xs">Advanced Mode</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="flex justify-between bg-green-900/20 rounded px-2 py-1 border-l-2 border-green-400">
+                        <span className="text-white/80">Goal</span>
+                        <span className="text-green-400 font-bold">+1000</span>
+                      </div>
+                      <div className="flex justify-between bg-blue-900/20 rounded px-2 py-1 border-l-2 border-blue-400">
+                        <span className="text-white/80">Distance</span>
+                        <span className="text-blue-400 font-bold">+50</span>
+                      </div>
+                      <div className="flex justify-between bg-purple-900/20 rounded px-2 py-1 border-l-2 border-purple-400">
+                        <span className="text-white/80">Efficiency</span>
+                        <span className="text-purple-400 font-bold">+25</span>
+                      </div>
+                      <div className="flex justify-between bg-red-900/20 rounded px-2 py-1 border-l-2 border-red-400">
+                        <span className="text-white/80">Wall</span>
+                        <span className="text-red-400 font-bold">-200</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-br from-red-900/30 to-pink-900/30 rounded-lg p-3 border border-red-400/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                      <span className="text-red-300 font-semibold text-xs">Crazy Mode</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="flex justify-between bg-green-900/20 rounded px-2 py-1 border-l-2 border-green-400">
+                        <span className="text-white/80">Goal</span>
+                        <span className="text-green-400 font-bold">+2000</span>
+                      </div>
+                      <div className="flex justify-between bg-blue-900/20 rounded px-2 py-1 border-l-2 border-blue-400">
+                        <span className="text-white/80">Distance</span>
+                        <span className="text-blue-400 font-bold">+100</span>
+                      </div>
+                      <div className="flex justify-between bg-purple-900/20 rounded px-2 py-1 border-l-2 border-purple-400">
+                        <span className="text-white/80">Efficiency</span>
+                        <span className="text-purple-400 font-bold">+50</span>
+                      </div>
+                      <div className="flex justify-between bg-cyan-900/20 rounded px-2 py-1 border-l-2 border-cyan-400">
+                        <span className="text-white/80">Speed</span>
+                        <span className="text-cyan-400 font-bold">+30</span>
+                      </div>
+                      <div className="flex justify-between bg-orange-900/20 rounded px-2 py-1 border-l-2 border-orange-400">
+                        <span className="text-white/80">Exploration</span>
+                        <span className="text-orange-400 font-bold">+20</span>
+                      </div>
+                      <div className="flex justify-between bg-pink-900/20 rounded px-2 py-1 border-l-2 border-pink-400">
+                        <span className="text-white/80">Multi-goal</span>
+                        <span className="text-pink-400 font-bold">+150</span>
+                      </div>
+                      <div className="flex justify-between bg-red-900/20 rounded px-2 py-1 border-l-2 border-red-400">
+                        <span className="text-white/80">Wall</span>
+                        <span className="text-red-400 font-bold">-500</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Simple Control Buttons */}
+              <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-4 border border-purple-500/20">
+                <h4 className="font-bold text-white mb-3">🎛️ Controls</h4>
+                
+                <div className="space-y-3">
                   {/* Step Speed Slider */}
                   <div>
-                    <label className="text-xs text-white/70 mb-2 block">Step Speed: {controls.stepSpeed}x</label>
+                    <label className="text-sm text-white/70 mb-2 block">Step Speed: {controls.stepSpeed}x</label>
                     <input
                       type="range"
                       min="1"
-                      max="5"
+                      max="10"
                       step="1"
                       value={controls.stepSpeed}
                       onChange={(e) => setControls(prev => ({ ...prev, stepSpeed: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="text-xs text-white/50 mt-1">Adjust how fast agents learn and move</div>
                   </div>
                   
-                  {/* Spawn Agent Button */}
-                  <div>
-                    <button
-                      onClick={() => (window as any).spawnRandomAgent?.()}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={stats.agentsActive >= 15}
-                    >
-                      🎯 Spawn New Agent ({stats.agentsActive}/15)
-                    </button>
-                    <div className="text-xs text-white/50 mt-1">Add more agents to the learning environment</div>
-                  </div>
+                  
                 </div>
               </div>
               
-              <div className="bg-white/5 rounded-lg p-3">
-                <h4 className="font-semibold text-white mb-2">Key Concepts:</h4>
-                <ul className="space-y-1 text-xs">
-                  <li>• <strong>Exploration vs Exploitation</strong> - agents balance random vs learned actions</li>
-                  <li>• <strong>Reward System</strong> - +1 for goals, penalties for walls/time</li>
-                  <li>• <strong>Learning Decay</strong> - epsilon decreases over time (agents get smarter)</li>
-                  <li>• <strong>Q-Table Updates</strong> - agents learn from each experience</li>
-                </ul>
-              </div>
+              <p className="text-white italic">
+                Click anywhere on the background to spawn new agents!
+              </p>
+              
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              >
+                Close Modal
+              </button>
             </div>
           </div>
         </div>

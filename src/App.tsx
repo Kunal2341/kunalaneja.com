@@ -16,13 +16,13 @@ export default function App() {
 
         {/* Hero section */}
         <header id="home" className="relative">
-          <div className="container-xl pt-28 md:pt-36 h-screen flex flex-col justify-center">
+          <div className="container-xl pt-28 md:pt-36 h-screen flex flex-col justify-center" style={{ pointerEvents: "none" }}>
             <div className="max-w-3xl">
               <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight">
                 {profile.name}
               </h1>
               <p className="text-lg md:text-xl text-white/80 mt-3">{profile.tagline}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap gap-3" style={{ pointerEvents: "auto" }}>
                 <a href="#research" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition">Explore Research</a>
                 <a href="#contact" className="px-4 py-2 rounded-lg border border-white/20 hover:border-white/40 transition">Contact</a>
               </div>
@@ -33,21 +33,21 @@ export default function App() {
           </div>
         </header>
 
-      <main>
+      <main style={{ pointerEvents: "none" }}>
         <Section id="research" title="Research">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6" style={{ pointerEvents: "auto" }}>
             {profile.publications.map((p, i) => <PublicationCard key={i} pub={p} />)}
           </div>
         </Section>
 
         <Section id="projects" title="Projects">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ pointerEvents: "auto" }}>
             {profile.projects.map((p, i) => <ProjectCard key={i} p={p} />)}
           </div>
         </Section>
 
         <Section id="education" title="Education">
-          <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto" style={{ pointerEvents: "auto" }}>
             {profile.education.map((edu, i) => <EducationCard key={i} education={edu} />)}
           </div>
         </Section>
@@ -64,7 +64,7 @@ export default function App() {
                 tasks without explicit action annotations, advancing toward more autonomous robotic systems.
               </p>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4" style={{ pointerEvents: "auto" }}>
               <div className="glass rounded-xl p-4">
                 <h3 className="font-semibold">Skills</h3>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -92,7 +92,7 @@ export default function App() {
 
         <Section id="contact" title="Contact">
           <div className="flex justify-center">
-            <div className="glass rounded-xl p-5 max-w-md">
+            <div className="glass rounded-xl p-5 max-w-md" style={{ pointerEvents: "auto" }}>
               <h3 className="font-semibold">Reach out</h3>
               <p className="text-white/70 mt-2">Email: <a href={`mailto:${profile.email}`} className="underline">{profile.email}</a></p>
               <p className="text-white/70 mt-1">Location: {profile.location}</p>

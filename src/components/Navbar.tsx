@@ -11,7 +11,7 @@ const links = [
 
 export default function Navbar() {
   return (
-    <div className="fixed top-0 inset-x-0 z-50">
+    <div className="fixed top-0 inset-x-0 z-40" style={{ pointerEvents: "auto" }}>
       <div className="container-xl py-3">
         <div className="glass rounded-xl px-4 py-2 flex items-center justify-between">
           <a href="#home" className="flex items-center gap-3 font-bold tracking-tight">
