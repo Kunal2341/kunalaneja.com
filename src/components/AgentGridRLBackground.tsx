@@ -36,13 +36,16 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 1, // RL_STEPS multiplier
+    stepSpeed: 1, // RL_STEPS multiplier (1x = previous 0.3x speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
-    goalSpeed: 0.025, // goal movement speed (fixed)
+    goalSpeed: 0.015, // goal movement speed (slower for different screens)
     autoSpawnRate: 3000, // milliseconds between auto-spawns (fixed)
     rewardMode: 0, // 0=basic, 1=advanced, 2=crazy
   });
+
+  // Pause state
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -882,6 +885,37 @@ export default function AgentGridRLBackground({ children }: Props) {
     function frame() {
       const now = performance.now() * 0.001;
       const dt = Math.min(0.05, now - last);
+
+      // Continue background animation even when paused
+      // Skip agent and target updates if paused
+      if (isPaused) {
+        // Update background breathing effects even when paused
+        autoPulseT += dt;
+        if (autoPulseT > AUTOPULSE_PERIOD) {
+          autoPulseT = 0;
+          emitPulse(W * (0.35 + 0.3 * Math.random()), H * (0.3 + 0.4 * Math.random()), 0.25);
+        }
+
+        // Update ripples for background breathing
+        ripples.forEach((r, i) => {
+          r.t += dt * 2;
+          r.amp *= 0.95;
+          if (r.amp < 0.01) ripples.splice(i, 1);
+        });
+
+        // Clear canvas and draw animated background with static agents
+        ctx.fillStyle = "#0a0a0a";
+        ctx.fillRect(0, 0, W, H);
+        
+        // Draw animated grid and static agents/target
+        drawGrid(now);
+        drawAgents(now);
+        
+        rafId = requestAnimationFrame(frame) as unknown as number;
+        return;
+      }
+
+      // Update last time only when not paused
       last = now;
 
       // Periodic auto pulse near center to keep mesh breathing (gentle)
@@ -931,9 +965,41 @@ export default function AgentGridRLBackground({ children }: Props) {
       // Update goal position with smooth bouncing
       updateGoalPosition();
 
+      // Safety check: Ensure we always have at least 5 agents
+      if (agents.length < 5) {
+        const needed = 5 - agents.length;
+        for (let i = 0; i < needed; i++) {
+          const spawnX = Math.floor(Math.random() * nx);
+          const spawnY = Math.floor(Math.random() * ny);
+          
+          const safetyAgent = {
+            x: spawnX,
+            y: spawnY,
+            eps: controls.explorationRate + Math.random() * 0.25,
+            alpha: controls.learningRate,
+            gamma: 0.96,
+            modeChaos: false,
+            modeFlock: true,
+            colorHue: Math.floor(Math.random() * 360),
+            trail: [] as Array<{x:number,y:number}>,
+            goalsReached: 0,
+            steps: 0,
+            totalReward: 0,
+            birthTime: performance.now(),
+            lifespan: 40000,
+            isSpawned: false, // Mark as safety agent
+            speedBoost: false,
+            originalEps: controls.explorationRate + Math.random() * 0.25,
+            originalAlpha: controls.learningRate,
+          };
+          
+          agents.push(safetyAgent);
+        }
+      }
+
       // RL: dynamic steps per frame based on controls and speed boost
       const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
-      RL_STEPS = controls.stepSpeed * speedBoostMultiplier;
+      RL_STEPS = controls.stepSpeed * 0.3 * speedBoostMultiplier; // 1x now = previous 0.3x speed
       for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);
       
       // Handle agent death and replacement
@@ -1033,7 +1099,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       delete (window as any).spawnRandomAgent;
       delete (window as any).testCanvasClick;
     };
-  }, [controls]);
+  }, [controls, isPaused]);
 
   return (
     <div className="relative w-full min-h-screen">
@@ -1071,8 +1137,36 @@ export default function AgentGridRLBackground({ children }: Props) {
         </div>
       </div>
 
-      {/* Info button */}
-      <div className="fixed bottom-4 right-4 z-30">
+      {/* Control buttons */}
+      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+        {/* Pause button */}
+        <button 
+          onClick={() => setIsPaused(!isPaused)}
+          className={`group relative w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 ${
+            isPaused 
+              ? 'bg-green-500/20 hover:bg-green-500/30' 
+              : 'bg-white/10 hover:bg-white/20'
+          }`}
+          title={isPaused ? "Resume animation" : "Pause animation"}
+        >
+          {isPaused ? (
+            <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5v14l11-7z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+          
+          {/* Tooltip on hover */}
+          <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-black/80 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+            {isPaused ? "Resume animation" : "Pause animation"}
+            <div className="absolute top-full right-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/80"></div>
+          </div>
+        </button>
+
+        {/* Info button */}
         <button 
           onClick={() => {
             setShowInfoModal(true);
@@ -1275,11 +1369,11 @@ export default function AgentGridRLBackground({ children }: Props) {
                     <label className="text-sm text-white/70 mb-2 block">Step Speed: {controls.stepSpeed}x</label>
                     <input
                       type="range"
-                      min="1"
-                      max="10"
-                      step="1"
+                      min="0.1"
+                      max="5"
+                      step="0.1"
                       value={controls.stepSpeed}
-                      onChange={(e) => setControls(prev => ({ ...prev, stepSpeed: parseInt(e.target.value) }))}
+                      onChange={(e) => setControls(prev => ({ ...prev, stepSpeed: parseFloat(e.target.value) }))}
                       className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
                     />
                   </div>
