@@ -51,7 +51,7 @@ PersonalWebsite/
 │   ├── amplify_vid.mp4          # AMPLIFY project video
 │   ├── flash_vid.gif            # FLASH project video
 │   ├── i2g2ro_vid.gif           # I2G2RO project video
-│   ├── pressurevision_vid.gif   # PressureVision project video
+│   ├── pressurevision++.mp4     # PressureVision project video
 │   ├── survey_img.png           # Survey project image
 │   ├── resume.pdf               # Downloadable resume
 │   ├── favicon.svg              # Site icon
@@ -152,8 +152,8 @@ export const profile = {
 ```
 
 ### Media Assets
-- **Research Videos**: MP4 format with autoplay and loop (`amplify_vid.mp4`)
-- **GIFs**: High-quality animated demonstrations (`flash_vid.gif`, `i2g2ro_vid.gif`, `pressurevision_vid.gif`)
+- **Research Videos**: MP4 format with autoplay and loop (`amplify_vid.mp4`, `pressurevision++.mp4`)
+- **GIFs**: High-quality animated demonstrations (`flash_vid.gif`, `i2g2ro_vid.gif`)
 - **Images**: PNG/JPEG for diagrams and figures (`survey_img.png`)
 - **PDFs**: Resume and supplementary documents (`resume.pdf`)
 
@@ -350,9 +350,11 @@ This project is open source and available under the [MIT License](LICENSE).
 
 - ✅ **Website Title**: Updated to "Kunal Portfolio"
 - ✅ **Asset Organization**: Standardized naming convention (`projname_vid/img`)
-- ✅ **RL Background**: Enhanced with smooth goal movement and collision detection
+- ✅ **RL Background**: Enhanced with smooth goal movement, collision detection, and advanced reward systems
 - ✅ **Research Content**: Added latest publications (AMPLIFY, FLASH, PressureVision++, Survey)
-- ✅ **Interactive Features**: Click-to-spawn agents, keyboard controls, info modal
+- ✅ **Interactive Features**: Click-to-spawn agents, keyboard controls, info modal, pause functionality
+- ✅ **Video Format**: Updated PressureVision to MP4 format for better quality and compression
+- ✅ **UI Improvements**: Fixed duplicate labels, enhanced button styling, improved modal design
 
 ---
 
