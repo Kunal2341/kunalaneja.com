@@ -1142,19 +1142,19 @@ export default function AgentGridRLBackground({ children }: Props) {
         {/* Pause button */}
         <button 
           onClick={() => setIsPaused(!isPaused)}
-          className={`group relative w-8 h-8 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 ${
+          className={`group relative w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 shadow-lg shadow-black/50 ${
             isPaused 
-              ? 'bg-green-500/20 hover:bg-green-500/30' 
+              ? 'bg-green-500/20 hover:bg-green-500/30 shadow-green-500/30' 
               : 'bg-white/10 hover:bg-white/20'
           }`}
           title={isPaused ? "Resume animation" : "Pause animation"}
         >
           {isPaused ? (
-            <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5v14l11-7z" />
             </svg>
           ) : (
-            <svg className="w-4 h-4 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           )}
@@ -1171,10 +1171,10 @@ export default function AgentGridRLBackground({ children }: Props) {
           onClick={() => {
             setShowInfoModal(true);
           }}
-          className="group relative w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all duration-200"
+          className="group relative w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all duration-200 shadow-lg shadow-black/50"
           title="Learn about this background"
         >
-          <svg className="w-4 h-4 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           
