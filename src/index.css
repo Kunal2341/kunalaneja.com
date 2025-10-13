@@ -22,3 +22,38 @@ html {
 .container-xl {
   @apply max-w-6xl px-6 mx-auto;
 }
+
+/* Custom slider styles for RL controls */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.slider::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.slider::-webkit-slider-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  height: 8px;
+}
+
+.slider::-moz-range-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  height: 8px;
+  border: none;
+}

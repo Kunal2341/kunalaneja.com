@@ -40,7 +40,7 @@ export type Experience = {
 
 export const profile = {
   name: "Kunal Aneja",
-  tagline: "Research Engineer • RL + Systems • Interactive AI",
+  tagline: "Research Engineer • RL • VLA • Robotics",
   location: "Atlanta, GA",
   email: "kunala@gatech.edu",
   socials: {

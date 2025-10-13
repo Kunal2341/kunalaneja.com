@@ -18,6 +18,30 @@ type Props = { children?: React.ReactNode };
 export default function AgentGridRLBackground({ children }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  
+  // Live statistics state
+  const [stats, setStats] = useState({
+    totalGoals: 0,
+    totalSteps: 0,
+    averageEpsilon: 0,
+    qTableSize: 0,
+    agentsActive: 0,
+    learningRate: 0,
+    sessionTime: 0,
+    goalsPerMinute: 0,
+    explorationRate: 0,
+    bestAgentScore: 0,
+    averageReward: 0
+  });
+
+  // Control parameters state
+  const [controls, setControls] = useState({
+    stepSpeed: 1, // RL_STEPS multiplier
+    learningRate: 0.22, // alpha (fixed)
+    explorationRate: 0.20, // initial epsilon (fixed)
+    goalSpeed: 0.025, // goal movement speed (fixed)
+    autoSpawnRate: 3000, // milliseconds between auto-spawns (fixed)
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -28,7 +52,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     // --- Tunables for subtle vibe ---
     const MAX_RIPPLE = 28;            // allow larger user pulses
     const BG_WARP_AMP = 7;            // base warp amplitude (subtle but flowing)
-    const RL_STEPS = 1;               // slower agent motion
+    let RL_STEPS = controls.stepSpeed; // dynamic agent motion speed
     const AUTOPULSE_PERIOD = 7.5;     // seconds between quiet auto pulses
 
     // Trail settings
@@ -77,16 +101,30 @@ export default function AgentGridRLBackground({ children }: Props) {
       modeFlock: true,
       colorHue: agentColors[i], // each agent gets a distinct color
       trail: [] as Array<{x:number,y:number}>,       // history in grid coords
+      goalsReached: 0, // track individual agent performance
+      steps: 0, // track steps taken by this agent
+      totalReward: 0, // track cumulative reward
     }));
+    
+    // Global statistics tracking
+    let globalStats = {
+      totalGoals: 0,
+      totalSteps: 0,
+      sessionStartTime: performance.now(),
+      lastGoalTime: 0,
+      qTableUpdates: 0,
+      explorationSteps: 0,
+      exploitationSteps: 0,
+    };
 
     // Moving goal (single shared), shown by default
     let goal = { x: Math.floor(nx * 0.75), y: Math.floor(ny * 0.5) };
-    let goalVelocity = { dx: 0.03, dy: 0.02 }; // even slower movement speed
+    let goalVelocity = { dx: controls.goalSpeed, dy: controls.goalSpeed * 0.8 }; // dynamic movement speed
     let showGoal = true;
     
     // Auto-spawn timer
     let lastSpawnTime = 0;
-    const SPAWN_INTERVAL = 3000; // 3 seconds
+    let SPAWN_INTERVAL = controls.autoSpawnRate; // dynamic spawn interval
 
     // Ripples
     type Ripple = { x: number, y: number, t: number, amp: number, speed: number, decay: number };
@@ -145,13 +183,16 @@ export default function AgentGridRLBackground({ children }: Props) {
       const newAgent = {
         x: clampedX,
         y: clampedY,
-        eps: 0.20 + Math.random() * 0.25,
-        alpha: 0.22,
+        eps: controls.explorationRate + Math.random() * 0.25,
+        alpha: controls.learningRate,
         gamma: 0.96,
         modeChaos: false,
         modeFlock: true,
         colorHue: Math.floor(Math.random() * 360), // random color for clicked agents
         trail: [] as Array<{x:number,y:number}>,
+        goalsReached: 0,
+        steps: 0,
+        totalReward: 0,
       };
       
       agents.push(newAgent);
@@ -181,13 +222,16 @@ export default function AgentGridRLBackground({ children }: Props) {
       const newAgent = {
         x: clampedX,
         y: clampedY,
-        eps: 0.20 + Math.random() * 0.25,
-        alpha: 0.22,
+        eps: controls.explorationRate + Math.random() * 0.25,
+        alpha: controls.learningRate,
         gamma: 0.96,
         modeChaos: false,
         modeFlock: true,
         colorHue: Math.floor(Math.random() * 360), // random color for clicked agents
         trail: [] as Array<{x:number,y:number}>,
+        goalsReached: 0,
+        steps: 0,
+        totalReward: 0,
       };
       
       agents.push(newAgent);
@@ -221,14 +265,18 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
     
     function updateGoalPosition() {
+      // Update goal velocity based on controls
+      goalVelocity.dx = controls.goalSpeed;
+      goalVelocity.dy = controls.goalSpeed * 0.8;
+      
       // Add small random changes to velocity occasionally
       if (Math.random() < 0.02) { // 2% chance each frame
         goalVelocity.dx += (Math.random() - 0.5) * 0.01;
         goalVelocity.dy += (Math.random() - 0.5) * 0.01;
         
         // Clamp velocity to reasonable range
-        goalVelocity.dx = Math.max(-0.05, Math.min(0.05, goalVelocity.dx));
-        goalVelocity.dy = Math.max(-0.05, Math.min(0.05, goalVelocity.dy));
+        goalVelocity.dx = Math.max(-controls.goalSpeed * 2, Math.min(controls.goalSpeed * 2, goalVelocity.dx));
+        goalVelocity.dy = Math.max(-controls.goalSpeed * 2, Math.min(controls.goalSpeed * 2, goalVelocity.dy));
       }
       
       // Update goal position with velocity
@@ -294,6 +342,13 @@ export default function AgentGridRLBackground({ children }: Props) {
       const explore = Math.random() < a.eps;
       let act = explore ? ACTIONS[(Math.random() * 4) | 0] : argmax4(q0, q1, q2, q3);
 
+      // Track exploration vs exploitation
+      if (explore) {
+        globalStats.explorationSteps++;
+      } else {
+        globalStats.exploitationSteps++;
+      }
+
       let dx = 0, dy = 0;
       if (act === 0) dy = -1; else if (act === 1) dx = 1; else if (act === 2) dy = 1; else dx = -1;
       dx += flockBias.dx + chaosDx; dy += flockBias.dy + chaosDy;
@@ -313,16 +368,25 @@ export default function AgentGridRLBackground({ children }: Props) {
       const goalGridX = Math.floor(goal.x + 0.5); // round to nearest grid cell
       const goalGridY = Math.floor(goal.y + 0.5);
       const reached = (nxp === goalGridX && nyp === goalGridY);
-      if (reached) r += 1.0;
+      if (reached) {
+        r += 1.0;
+        a.goalsReached++;
+        globalStats.totalGoals++;
+        globalStats.lastGoalTime = performance.now();
+      }
 
       // TD update
       const sj = sIndex(nxp, nyp);
       const maxNext = Math.max(Q[sj + 0], Q[sj + 1], Q[sj + 2], Q[sj + 3]);
       const td = r + a.gamma * maxNext - Q[si + (act as number)];
       Q[si + (act as number)] += a.alpha * td;
+      globalStats.qTableUpdates++;
 
       a.x = nxp; a.y = nyp;
       a.eps = Math.max(0.02, a.eps * 0.9995);
+      a.steps++;
+      a.totalReward += r;
+      globalStats.totalSteps++;
 
       // Trail update (only on movement)
       if (a.x !== oldX || a.y !== oldY) {
@@ -548,6 +612,59 @@ export default function AgentGridRLBackground({ children }: Props) {
       console.log("[AgentGridRLBackground] self-tests passed ✓");
     })();
 
+    // Statistics update function
+    function updateStats() {
+      const now = performance.now();
+      const sessionTime = (now - globalStats.sessionStartTime) / 1000; // seconds
+      const goalsPerMinute = globalStats.totalGoals / (sessionTime / 60);
+      const averageEpsilon = agents.reduce((sum, a) => sum + a.eps, 0) / agents.length;
+      const explorationRate = globalStats.explorationSteps / (globalStats.explorationSteps + globalStats.exploitationSteps) * 100;
+      const bestAgentScore = Math.max(...agents.map(a => a.goalsReached));
+      const averageReward = agents.reduce((sum, a) => sum + a.totalReward, 0) / agents.length;
+
+      setStats({
+        totalGoals: globalStats.totalGoals,
+        totalSteps: globalStats.totalSteps,
+        averageEpsilon: Math.round(averageEpsilon * 1000) / 1000,
+        qTableSize: Q.length,
+        agentsActive: agents.length,
+        learningRate: controls.learningRate,
+        sessionTime: Math.round(sessionTime),
+        goalsPerMinute: Math.round(goalsPerMinute * 10) / 10,
+        explorationRate: Math.round(explorationRate * 10) / 10,
+        bestAgentScore,
+        averageReward: Math.round(averageReward * 1000) / 1000
+      });
+    }
+
+    // Function to spawn agents manually
+    function spawnRandomAgent() {
+      if (agents.length >= 15) return; // max limit
+      
+      const spawnX = Math.floor(Math.random() * nx);
+      const spawnY = Math.floor(Math.random() * ny);
+      
+      const newAgent = {
+        x: spawnX,
+        y: spawnY,
+        eps: controls.explorationRate + Math.random() * 0.25,
+        alpha: controls.learningRate,
+        gamma: 0.96,
+        modeChaos: false,
+        modeFlock: true,
+        colorHue: Math.floor(Math.random() * 360),
+        trail: [] as Array<{x:number,y:number}>,
+        goalsReached: 0,
+        steps: 0,
+        totalReward: 0,
+      };
+      
+      agents.push(newAgent);
+      
+      // Add a pulse at spawn location
+      emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.2);
+    }
+
     // Main loop -------------------------------------------------------------
     let last = performance.now() * 0.001;
     let rafId = 0 as number | 0;
@@ -567,7 +684,8 @@ export default function AgentGridRLBackground({ children }: Props) {
       // Let pointer subtly influence ripples when active (rarer)
       if (pointer.active && Math.random() < 0.05) emitPulse(pointer.x, pointer.y, 0.25);
 
-      // Auto-spawn new agents every few seconds
+      // Auto-spawn new agents every few seconds (update interval dynamically)
+      SPAWN_INTERVAL = controls.autoSpawnRate;
       if (now - lastSpawnTime > SPAWN_INTERVAL && agents.length < 12) {
         const spawnX = Math.floor(Math.random() * nx);
         const spawnY = Math.floor(Math.random() * ny);
@@ -575,13 +693,16 @@ export default function AgentGridRLBackground({ children }: Props) {
         const newAgent = {
           x: spawnX,
           y: spawnY,
-          eps: 0.20 + Math.random() * 0.25,
-          alpha: 0.22,
+          eps: controls.explorationRate + Math.random() * 0.25,
+          alpha: controls.learningRate,
           gamma: 0.96,
           modeChaos: false,
           modeFlock: true,
           colorHue: Math.floor(Math.random() * 360), // random color for auto-spawned agents
           trail: [] as Array<{x:number,y:number}>,
+          goalsReached: 0,
+          steps: 0,
+          totalReward: 0,
         };
         
         agents.push(newAgent);
@@ -594,8 +715,14 @@ export default function AgentGridRLBackground({ children }: Props) {
       // Update goal position with smooth bouncing
       updateGoalPosition();
 
-      // RL: fewer steps per frame (subtle)
+      // RL: dynamic steps per frame based on controls
+      RL_STEPS = controls.stepSpeed;
       for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);
+
+      // Update statistics every 30 frames (roughly 0.5 seconds at 60fps)
+      if (Math.floor(now * 60) % 30 === 0) {
+        updateStats();
+      }
 
       // Draw
       drawGrid(now);
@@ -606,6 +733,9 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     rafId = requestAnimationFrame(frame) as unknown as number;
 
+    // Expose functions to the component scope
+    (window as any).spawnRandomAgent = spawnRandomAgent;
+
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
@@ -615,8 +745,9 @@ export default function AgentGridRLBackground({ children }: Props) {
       canvas.removeEventListener("mousedown", onDown);
       canvas.removeEventListener("touchstart", onTouchStart as any);
       canvas.style.transform = "";
+      delete (window as any).spawnRandomAgent;
     };
-  }, []);
+  }, [controls]);
 
   return (
     <div className="relative w-full min-h-screen">
@@ -662,7 +793,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           />
           
           {/* Modal Content */}
-          <div className="relative bg-black/90 border border-white/20 rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div className="relative bg-black/90 border border-white/20 rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
             <button
               onClick={() => setShowInfoModal(false)}
               className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
@@ -679,28 +810,105 @@ export default function AgentGridRLBackground({ children }: Props) {
                 This background uses <strong className="text-blue-400">Q-learning</strong>, a reinforcement learning algorithm where agents learn to navigate toward goals.
               </p>
               
-              <div className="bg-white/5 rounded-lg p-3">
-                <h4 className="font-semibold text-white mb-2">🎯 What You See:</h4>
-                <ul className="space-y-1 text-xs">
-                  <li>• <strong>5 colored agents</strong> learning optimal paths</li>
-                  <li>• <strong>Moving goal</strong> (magenta circle) that challenges agents</li>
-                  <li>• <strong>Colored trails</strong> showing agent movement history</li>
-                  <li>• <strong>Click anywhere</strong> to spawn new agents</li>
-                </ul>
+              {/* Live Statistics Dashboard */}
+              <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-lg p-4 border border-blue-500/20">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  📊 Live Statistics
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Goals Reached</div>
+                    <div className="text-lg font-bold text-green-400">{stats.totalGoals}</div>
+                  </div>
+                  <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Total Steps</div>
+                    <div className="text-lg font-bold text-blue-400">{stats.totalSteps.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Goals/Min</div>
+                    <div className="text-lg font-bold text-purple-400">{stats.goalsPerMinute}</div>
+                  </div>
+                  <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Best Agent</div>
+                    <div className="text-lg font-bold text-yellow-400">{stats.bestAgentScore}</div>
+                  </div>
+                  <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Exploration %</div>
+                    <div className="text-lg font-bold text-orange-400">{stats.explorationRate}%</div>
+                  </div>
+                  <div className="bg-white/5 rounded p-2">
+                    <div className="text-white/60">Avg Reward</div>
+                    <div className="text-lg font-bold text-cyan-400">{stats.averageReward}</div>
+                  </div>
+                </div>
+                
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Session Time:</span>
+                    <span className="text-white">{Math.floor(stats.sessionTime / 60)}:{(stats.sessionTime % 60).toString().padStart(2, '0')}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Active Agents:</span>
+                    <span className="text-white">{stats.agentsActive}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Avg Epsilon:</span>
+                    <span className="text-white">{stats.averageEpsilon}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/60">Q-Table Size:</span>
+                    <span className="text-white">{stats.qTableSize.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Interactive Controls */}
+              <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-4 border border-purple-500/20">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  🎛️ Interactive Controls
+                </h4>
+                
+                <div className="space-y-4">
+                  {/* Step Speed Slider */}
+                  <div>
+                    <label className="text-xs text-white/70 mb-2 block">Step Speed: {controls.stepSpeed}x</label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={controls.stepSpeed}
+                      onChange={(e) => setControls(prev => ({ ...prev, stepSpeed: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="text-xs text-white/50 mt-1">Adjust how fast agents learn and move</div>
+                  </div>
+                  
+                  {/* Spawn Agent Button */}
+                  <div>
+                    <button
+                      onClick={() => (window as any).spawnRandomAgent?.()}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={stats.agentsActive >= 15}
+                    >
+                      🎯 Spawn New Agent ({stats.agentsActive}/15)
+                    </button>
+                    <div className="text-xs text-white/50 mt-1">Add more agents to the learning environment</div>
+                  </div>
+                </div>
               </div>
               
               <div className="bg-white/5 rounded-lg p-3">
-                <h4 className="font-semibold text-white mb-2">⚡ Key Concepts:</h4>
+                <h4 className="font-semibold text-white mb-2">Key Concepts:</h4>
                 <ul className="space-y-1 text-xs">
                   <li>• <strong>Exploration vs Exploitation</strong> - agents balance random vs learned actions</li>
                   <li>• <strong>Reward System</strong> - +1 for goals, penalties for walls/time</li>
-                  <li>• <strong>Learning Decay</strong> - agents get smarter over time</li>
+                  <li>• <strong>Learning Decay</strong> - epsilon decreases over time (agents get smarter)</li>
+                  <li>• <strong>Q-Table Updates</strong> - agents learn from each experience</li>
                 </ul>
               </div>
-              
-              <p className="text-xs text-white/60">
-                This demonstrates the same RL principles used in robotic manipulation research at the PAIR Lab.
-              </p>
             </div>
           </div>
         </div>
