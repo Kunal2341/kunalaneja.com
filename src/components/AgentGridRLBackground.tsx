@@ -904,8 +904,10 @@ export default function AgentGridRLBackground({ children }: Props) {
         });
 
         // Clear canvas and draw animated background with static agents
-        ctx.fillStyle = "#0a0a0a";
-        ctx.fillRect(0, 0, W, H);
+        if (ctx) {
+          ctx.fillStyle = "#0a0a0a";
+          ctx.fillRect(0, 0, W, H);
+        }
         
         // Draw animated grid and static agents/target
         drawGrid(now);
@@ -1142,9 +1144,9 @@ export default function AgentGridRLBackground({ children }: Props) {
         {/* Pause button */}
         <button 
           onClick={() => setIsPaused(!isPaused)}
-          className={`group relative w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 shadow-lg shadow-black/50 ${
+          className={`group relative w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 shadow-2xl shadow-black/70 ${
             isPaused 
-              ? 'bg-green-500/20 hover:bg-green-500/30 shadow-green-500/30' 
+              ? 'bg-green-500/20 hover:bg-green-500/30 shadow-green-500/50' 
               : 'bg-white/10 hover:bg-white/20'
           }`}
           title={isPaused ? "Resume animation" : "Pause animation"}
@@ -1171,7 +1173,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           onClick={() => {
             setShowInfoModal(true);
           }}
-          className="group relative w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all duration-200 shadow-lg shadow-black/50"
+          className="group relative w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all duration-200 shadow-2xl shadow-black/70"
           title="Learn about this background"
         >
           <svg className="w-6 h-6 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1250,7 +1252,6 @@ export default function AgentGridRLBackground({ children }: Props) {
                   
                   {/* Reward Mode Slider */}
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-white/70">Basic</span>
                     <input
                       type="range"
                       min="0"
@@ -1260,7 +1261,6 @@ export default function AgentGridRLBackground({ children }: Props) {
                       onChange={(e) => setControls(prev => ({ ...prev, rewardMode: parseInt(e.target.value) }))}
                       className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
                     />
-                    <span className="text-xs text-white/70">Crazy</span>
                   </div>
                   
                   <div className="flex justify-between text-xs text-white/60 mt-1">

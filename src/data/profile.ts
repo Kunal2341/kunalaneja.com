@@ -42,7 +42,7 @@ export const profile = {
   name: "Kunal Aneja",
   tagline: "Research Engineer • RL • VLA • Robotics",
   location: "Atlanta, GA",
-  email: "kunala@gatech.edu",
+  email: "kunala <at> gatech.edu",
   socials: {
     github: "https://github.com/Kunal2341",
     scholar: "https://scholar.google.com/citations?user=Faop3qAAAAAJ&hl=en",
@@ -104,7 +104,7 @@ export const profile = {
       title: "PressureVision++: Estimating Fingertip Pressure from Diverse RGB Images",
       authors: "Patrick Grady, Jeremy A. Collins, Chengcheng Tang, Christopher D. Twigg, Kunal Aneja, James Hays, Charles C. Kemp",
       venue: "WACV 2024",
-      image: "/pressurevision_vid.gif",
+      image: "/pressurevision++.mp4",
       lab: "HRL Lab",
       labUrl: "https://www.hrl.gatech.edu/",
       links: [
