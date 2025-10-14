@@ -106,10 +106,6 @@ export default function App() {
               <p className="text-white/80">
                 Feel free to reach out if you're interested in my research or just want to chat.
               </p>
-              <p className="text-white/70 mt-4">
-                I'm always excited to discuss robotics, reinforcement learning, and computer vision. 
-                Whether you have questions about my work or want to collaborate, I'd love to hear from you.
-              </p>
             </div>
             <div className="glass rounded-xl p-5">
               <h3 className="font-semibold mb-3">Reach out</h3>

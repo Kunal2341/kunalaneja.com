@@ -439,19 +439,22 @@ export default function AgentGridRLBackground({ children }: Props) {
       goal.x += goalVelocity.dx;
       goal.y += goalVelocity.dy;
       
-      // Bounce off edges with some randomness
-      if (goal.x <= 1 || goal.x >= nx - 2) {
-        goalVelocity.dx = -goalVelocity.dx * (0.8 + Math.random() * 0.4); // random bounce strength
-        goal.x = Math.max(1, Math.min(nx - 2, goal.x));
-      }
-      if (goal.y <= 1 || goal.y >= ny - 2) {
-        goalVelocity.dy = -goalVelocity.dy * (0.8 + Math.random() * 0.4); // random bounce strength
-        goal.y = Math.max(1, Math.min(ny - 2, goal.y));
+      // Bounce off edges with some randomness - fixed boundary logic
+      if (goal.x <= 1) {
+        goalVelocity.dx = Math.abs(goalVelocity.dx) * (0.8 + Math.random() * 0.4); // ensure positive velocity
+        goal.x = 1;
+      } else if (goal.x >= nx - 2) {
+        goalVelocity.dx = -Math.abs(goalVelocity.dx) * (0.8 + Math.random() * 0.4); // ensure negative velocity
+        goal.x = nx - 2;
       }
       
-      // Keep goal within bounds
-      goal.x = Math.max(1, Math.min(nx - 2, goal.x));
-      goal.y = Math.max(1, Math.min(ny - 2, goal.y));
+      if (goal.y <= 1) {
+        goalVelocity.dy = Math.abs(goalVelocity.dy) * (0.8 + Math.random() * 0.4); // ensure positive velocity
+        goal.y = 1;
+      } else if (goal.y >= ny - 2) {
+        goalVelocity.dy = -Math.abs(goalVelocity.dy) * (0.8 + Math.random() * 0.4); // ensure negative velocity
+        goal.y = ny - 2;
+      }
     }
 
     // Policy helpers
