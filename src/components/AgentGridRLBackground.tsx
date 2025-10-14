@@ -925,41 +925,14 @@ export default function AgentGridRLBackground({ children }: Props) {
     let rafId = 0 as number | 0;
 
     function frame() {
-      const now = performance.now() * 0.001;
-      const dt = Math.min(0.05, now - last);
-
-      // Continue background animation even when paused
-      // Skip agent and target updates if paused
+      // Simple pause: if paused, just stop the animation loop
       if (isPaused) {
-        // Update background breathing effects even when paused
-        autoPulseT += dt;
-        if (autoPulseT > AUTOPULSE_PERIOD) {
-          autoPulseT = 0;
-          emitPulse(W * (0.35 + 0.3 * Math.random()), H * (0.3 + 0.4 * Math.random()), 0.25);
-        }
-
-        // Update ripples for background breathing
-        ripples.forEach((r, i) => {
-          r.t += dt * 2;
-          r.amp *= 0.95;
-          if (r.amp < 0.01) ripples.splice(i, 1);
-        });
-
-        // Clear canvas and draw animated background with static agents
-        if (ctx) {
-          ctx.fillStyle = "#0a0a0a";
-          ctx.fillRect(0, 0, W, H);
-        }
-        
-        // Draw animated grid and static agents/target
-        drawGrid(now);
-        drawAgents(now);
-        
         rafId = requestAnimationFrame(frame) as unknown as number;
         return;
       }
 
-      // Update last time only when not paused
+      const now = performance.now() * 0.001;
+      const dt = Math.min(0.05, now - last);
       last = now;
 
       // Periodic auto pulse near center to keep mesh breathing (gentle)
