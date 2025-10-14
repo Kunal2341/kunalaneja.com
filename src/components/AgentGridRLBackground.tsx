@@ -295,7 +295,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         gamma: 0.96,
         modeChaos: false,
         modeFlock: true,
-        colorHue: Math.floor(Math.random() * 360), // random color for clicked agents
+        colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range (180-300 degrees)
         trail: [] as Array<{x:number,y:number}>,
         goalsReached: 0,
         steps: 0,
@@ -390,7 +390,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         gamma: 0.96,
         modeChaos: false,
         modeFlock: true,
-        colorHue: Math.floor(Math.random() * 360), // random color for clicked agents
+        colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range (180-300 degrees)
         trail: [] as Array<{x:number,y:number}>,
         goalsReached: 0,
         steps: 0,
@@ -663,24 +663,33 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
 
     // Draw grid as warped polylines ----------------------------------------
-    // Cache gradient to avoid recreating every frame
-    let cachedGradient: CanvasGradient | null = null;
+    // Cache gradients to avoid recreating every frame
+    let cachedVerticalGradient: CanvasGradient | null = null;
+    let cachedHorizontalGradient: CanvasGradient | null = null;
+    let lastGradientWidth = 0;
     let lastGradientHeight = 0;
     
     function drawGrid(t: number) {
       if (!ctx) return;
       
-      // Only recreate gradient if height changed
-      if (!cachedGradient || H !== lastGradientHeight) {
-        cachedGradient = ctx.createLinearGradient(0, 0, 0, H);
-        cachedGradient.addColorStop(0, "#05070b");
-        cachedGradient.addColorStop(0.6, "#090d14");
-        cachedGradient.addColorStop(1, "#05070a");
+      // Only recreate gradients if dimensions changed
+      if (!cachedVerticalGradient || H !== lastGradientHeight) {
+        cachedVerticalGradient = ctx.createLinearGradient(0, 0, 0, H);
+        cachedVerticalGradient.addColorStop(0, "rgba(255, 110, 110, 0.65)");
+        cachedVerticalGradient.addColorStop(0.5, "rgba(150, 120, 255, 0.8)");
+        cachedVerticalGradient.addColorStop(1, "rgba(85, 220, 255, 0.65)");
         lastGradientHeight = H;
       }
+      if (!cachedHorizontalGradient || W !== lastGradientWidth) {
+        cachedHorizontalGradient = ctx.createLinearGradient(0, 0, W, 0);
+        cachedHorizontalGradient.addColorStop(0, "rgba(255, 120, 180, 0.6)");
+        cachedHorizontalGradient.addColorStop(0.45, "rgba(140, 200, 255, 0.8)");
+        cachedHorizontalGradient.addColorStop(1, "rgba(120, 255, 210, 0.6)");
+        lastGradientWidth = W;
+      }
       
-      // Fill background without save/restore
-      ctx.fillStyle = cachedGradient;
+      // Fill background with solid black
+      ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, W, H);
 
       // Recompute nx/ny in case of resize
@@ -712,10 +721,9 @@ export default function AgentGridRLBackground({ children }: Props) {
           if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
         if (!ctx) continue;
-        const a = 0.18 + 0.35 * Math.pow(i / nx, 1.1);
-        ctx.strokeStyle = `rgba(170, 230, 255, ${a})`;
+        ctx.strokeStyle = cachedVerticalGradient!;
         ctx.lineWidth = 0.8 + 1.4 * Math.pow(Math.abs(i - nx * 0.5) / (nx * 0.5), 0.7);
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.65;
         ctx.stroke();
       }
 
@@ -733,12 +741,12 @@ export default function AgentGridRLBackground({ children }: Props) {
           if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
         if (!ctx) continue;
-        const a = 0.16 + 0.4 * Math.pow(j / ny, 1.1);
-        ctx.strokeStyle = `rgba(255, 140, 240, ${a})`;
+        ctx.strokeStyle = cachedHorizontalGradient!;
         ctx.lineWidth = 0.8 + 1.8 * Math.pow(j / ny, 1.8);
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.65;
         ctx.stroke();
       }
+      ctx.globalAlpha = 1;
 
       // Goal marker - bigger red target (optimized with fewer operations)
       if (showGoal && ctx) {
@@ -750,21 +758,21 @@ export default function AgentGridRLBackground({ children }: Props) {
         ctx.beginPath();
         // Outer ring
         ctx.arc(gx, gy, rad + 12, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+        ctx.strokeStyle = "rgba(255, 70, 70, 0.35)";
         ctx.lineWidth = 4;
         ctx.stroke();
         
         // Middle ring
         ctx.beginPath();
         ctx.arc(gx, gy, rad + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 100, 100, 0.8)";
+        ctx.strokeStyle = "rgba(255, 95, 95, 0.6)";
         ctx.lineWidth = 3;
         ctx.stroke();
         
         // Center circle
         ctx.beginPath();
         ctx.arc(gx, gy, rad, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 80, 80, 0.95)";
+        ctx.fillStyle = "rgba(255, 45, 45, 0.9)";
         ctx.fill();
       }
     }
@@ -927,14 +935,19 @@ export default function AgentGridRLBackground({ children }: Props) {
     let rafId = 0 as number | 0;
 
     function frame() {
-      // Simple pause: if paused, just stop the animation loop
+      const now = performance.now() * 0.001;
+      const dt = Math.min(0.05, now - last);
+      const renderTime = isPaused ? last : now;
+      
+      // Always draw the grid, even when paused
+      drawGrid(renderTime);
+      
+      // If paused, only draw the grid and stop here
       if (isPaused) {
         rafId = requestAnimationFrame(frame) as unknown as number;
         return;
       }
-
-      const now = performance.now() * 0.001;
-      const dt = Math.min(0.05, now - last);
+      
       last = now;
 
       // Periodic auto pulse near center to keep mesh breathing (gentle)
@@ -961,7 +974,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           gamma: 0.96,
           modeChaos: false,
           modeFlock: true,
-          colorHue: Math.floor(Math.random() * 360), // random color for auto-spawned agents
+          colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range (180-300 degrees)
           trail: [] as Array<{x:number,y:number}>,
           goalsReached: 0,
           steps: 0,
@@ -1009,7 +1022,7 @@ export default function AgentGridRLBackground({ children }: Props) {
             gamma: 0.96,
             modeChaos: false,
             modeFlock: true,
-            colorHue: Math.floor(Math.random() * 360),
+            colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range
             trail: [] as Array<{x:number,y:number}>,
             goalsReached: 0,
             steps: 0,
@@ -1087,7 +1100,7 @@ export default function AgentGridRLBackground({ children }: Props) {
               gamma: 0.96,
               modeChaos: false,
               modeFlock: true,
-              colorHue: Math.floor(Math.random() * 360),
+              colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range
               trail: [] as Array<{x:number,y:number}>,
               goalsReached: 0,
               steps: 0,
@@ -1113,8 +1126,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         updateStats();
       }
 
-      // Draw
-      drawGrid(now);
+      // Draw agents (grid already drawn at the beginning of frame)
       drawAgents(now);
 
       rafId = requestAnimationFrame(frame) as unknown as number;
