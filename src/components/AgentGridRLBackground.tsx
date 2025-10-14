@@ -38,7 +38,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 1, // RL_STEPS multiplier (1x = comfortable default speed)
+    stepSpeed: 0.75, // RL_STEPS multiplier (0.75x = reduced default speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.015, // goal movement speed (slower for different screens)
@@ -229,56 +229,18 @@ export default function AgentGridRLBackground({ children }: Props) {
       canvas.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg)`;
     };
     const onLeave = () => { pointer.active = false; canvas.style.transform = ""; };
-    const onDown = (e: MouseEvent) => {
-      // Only check for specific interactive UI elements, not the canvas or background
-      const elementsAtPoint = document.elementsFromPoint(e.clientX, e.clientY);
-      
-      // Only prevent spawning if clicking on actual interactive elements (not canvas/background)
-      const hasInteractiveElement = elementsAtPoint.some(el => {
-        // Skip the canvas itself
-        if (el.tagName === 'CANVAS') return false;
-        
-        const element = el as HTMLElement;
-        
-        // Skip elements with pointerEvents: none (these should allow background clicks)
-        if (element.style?.pointerEvents === 'none') return false;
-        
-        // Skip divs, headers, and other structural elements unless they have specific interactive properties
-        if (['DIV', 'HEADER', 'MAIN', 'SECTION', 'ARTICLE', 'FOOTER', 'NAV'].includes(el.tagName)) {
-          // Skip elements with noop onclick handlers (common in React/libraries)
-          const hasOnclick = element.onclick;
-          if (hasOnclick && hasOnclick.name === 'noop') return false;
-          
-          // Skip our own content div that has the onMouseDown handler for event delegation
-          if (el.className === 'relative z-10') return false;
-          
-          // Only consider these interactive if they have direct interactive attributes or styles
-          const hasRole = element.getAttribute('role') === 'button';
-          const hasTabindex = element.getAttribute('tabindex') !== null;
-          const hasOnclickAttr = element.getAttribute('onclick') !== null;
-          
-          return hasOnclick || hasRole || hasTabindex || hasOnclickAttr;
-        }
-        
-        // Check for truly interactive elements
-        return el.tagName === 'BUTTON' || 
-               el.tagName === 'INPUT' || 
-               el.tagName === 'SELECT' ||
-               el.tagName === 'A' ||
-               el.closest('button') ||
-               el.closest('input') ||
-               el.closest('select') ||
-               el.closest('a[href]') ||
-               el.closest('[role="button"]') ||
-               el.closest('.modal') ||
-               el.closest('[data-modal]') ||
-               element.onclick;
-      });
-      
-      if (hasInteractiveElement) return;
+    // CAPTURE-PHASE global listener so overlays can't swallow the click
+    const onPointerDown = (ev: PointerEvent) => {
+      // Ignore obvious interactive UI so links/buttons still work
+      const t = ev.target as HTMLElement | null;
+      if (t?.closest('a,button,input,textarea,select,[role=button],[data-interactive="true"]')) return;
+
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left);
-      const y = (e.clientY - rect.top);
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (ev.clientX - rect.left) * scaleX / DPR;
+      const y = (ev.clientY - rect.top) * scaleY / DPR;
+      
       emitPulse(x, y, 2.2); // BIG user pulse
       
       // Create new agent at click location
@@ -326,96 +288,12 @@ export default function AgentGridRLBackground({ children }: Props) {
       
       agents.push(newAgent);
     };
-    const onTouchStart = (e: TouchEvent) => {
-      const t = e.touches[0];
-      if (!t) return;
-      
-      // Only check for specific interactive UI elements, not the canvas or background
-      const elementsAtPoint = document.elementsFromPoint(t.clientX, t.clientY);
-      
-      // Only prevent spawning if touching actual interactive elements (not canvas/background)
-      const hasInteractiveElement = elementsAtPoint.some(el => {
-        // Skip the canvas itself
-        if (el.tagName === 'CANVAS') return false;
-        
-        // Skip elements with pointerEvents: none (these should allow background touches)
-        const element = el as HTMLElement;
-        if (element.style?.pointerEvents === 'none') return false;
-        
-        // Skip divs, headers, and other structural elements unless they have specific interactive properties
-        if (['DIV', 'HEADER', 'MAIN', 'SECTION', 'ARTICLE', 'FOOTER', 'NAV'].includes(el.tagName)) {
-          // Only consider these interactive if they have specific interactive attributes or styles
-          if (element.onclick || 
-              element.getAttribute('role') === 'button' ||
-              element.closest('button') ||
-              element.closest('a[href]') ||
-              element.closest('[role="button"]')) {
-            return true;
-          }
-          return false; // Skip structural elements
-        }
-        
-        // Check for truly interactive elements
-        return el.tagName === 'BUTTON' || 
-               el.tagName === 'INPUT' || 
-               el.tagName === 'SELECT' ||
-               el.tagName === 'A' ||
-               el.closest('button') ||
-               el.closest('input') ||
-               el.closest('select') ||
-               el.closest('a[href]') ||
-               el.closest('[role="button"]') ||
-               el.closest('.modal') ||
-               el.closest('[data-modal]') ||
-               element.onclick;
-      });
-      
-      if (hasInteractiveElement) {
-        return;
-      }
-      
-      const rect = canvas.getBoundingClientRect();
-      const x = t.clientX - rect.left;
-      const y = t.clientY - rect.top;
-      emitPulse(x, y, 2.4);
-      
-      // Create new agent at touch location (same logic as mouse click)
-      const spacingX = W / nx;
-      const spacingY = H / ny;
-      const gridX = Math.floor(x / spacingX);
-      const gridY = Math.floor(y / spacingY);
-      
-      const clampedX = Math.max(0, Math.min(nx - 1, gridX));
-      const clampedY = Math.max(0, Math.min(ny - 1, gridY));
-      
-      const newAgent = {
-        x: clampedX,
-        y: clampedY,
-        eps: controls.explorationRate + Math.random() * 0.25,
-        alpha: controls.learningRate,
-        gamma: 0.96,
-        modeChaos: false,
-        modeFlock: true,
-        colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range (180-300 degrees)
-        trail: [] as Array<{x:number,y:number}>,
-        goalsReached: 0,
-        steps: 0,
-        totalReward: 0,
-        birthTime: performance.now(),
-        lifespan: 40000,
-        isSpawned: true,
-        speedBoost: false,
-        originalEps: controls.explorationRate + Math.random() * 0.25,
-        originalAlpha: controls.learningRate,
-      };
-      
-      agents.push(newAgent);
-    };
 
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("mouseleave", onLeave);
-    canvas.addEventListener("mousedown", onDown);
-    canvas.addEventListener("touchstart", onTouchStart, { passive: true } as any);
+    
+    // Global capture-phase listener for unblockable clicks
+    document.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
     
     // Debug: Log that event listeners are attached
 
@@ -1162,8 +1040,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       document.removeEventListener("keydown", onKey, true);
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mouseleave", onLeave);
-      canvas.removeEventListener("mousedown", onDown);
-      canvas.removeEventListener("touchstart", onTouchStart as any);
+      document.removeEventListener("pointerdown", onPointerDown, { capture: true } as any);
       canvas.style.transform = "";
       // delete (window as any).spawnRandomAgent;
       // delete (window as any).testCanvasClick;
@@ -1176,7 +1053,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       <canvas
         ref={canvasRef}
         className="fixed inset-0 w-full h-full block will-change-transform"
-        style={{ pointerEvents: "auto", zIndex: -1 }}
+        style={{ pointerEvents: "none", zIndex: -1 }}
         aria-hidden="true"
       />
 
