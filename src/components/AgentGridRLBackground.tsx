@@ -1290,7 +1290,7 @@ export default function AgentGridRLBackground({ children }: Props) {
               </svg>
             </button>
             
-            <h3 className="text-xl font-bold text-white mb-4 pr-8">🧠 RL Background System</h3>
+            <h3 className="text-xl font-bold text-white mb-4 pr-8">RL Background System</h3>
             
             <div className="space-y-4 text-white/80 text-sm">
               <p className="text-white">
@@ -1300,7 +1300,7 @@ export default function AgentGridRLBackground({ children }: Props) {
               {/* Live Statistics Dashboard */}
               <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-lg p-4 border border-blue-500/20">
                 <h4 className="font-bold text-white mb-3 flex items-center gap-2">
-                  📊 Live Statistics
+                  Live Statistics
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                 </h4>
                 
@@ -1329,7 +1329,7 @@ export default function AgentGridRLBackground({ children }: Props) {
               <div className="bg-gradient-to-r from-emerald-900/20 to-teal-900/20 rounded-lg p-4 border border-emerald-500/20">
                 <div className="mb-3">
                   <h4 className="font-bold text-white mb-2 flex items-center gap-2">
-                    🎯 Reward System
+                    Reward System
                   </h4>
                   
                   {/* Reward Mode Slider */}
@@ -1443,7 +1443,7 @@ export default function AgentGridRLBackground({ children }: Props) {
               
               {/* Simple Control Buttons */}
               <div className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-lg p-4 border border-purple-500/20">
-                <h4 className="font-bold text-white mb-3">🎛️ Controls</h4>
+                <h4 className="font-bold text-white mb-3">Controls</h4>
                 
                 <div className="space-y-3">
                   {/* Step Speed Slider */}
