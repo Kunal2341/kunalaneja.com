@@ -36,7 +36,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 0.5, // RL_STEPS multiplier (0.5x = 50% slower default speed)
+    stepSpeed: 1, // RL_STEPS multiplier (1x = comfortable default speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.015, // goal movement speed (slower for different screens)
@@ -129,7 +129,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     };
 
     // Moving goal (single shared), shown by default
-    let goal = { x: Math.floor(nx * 0.75), y: Math.floor(ny * 0.5) };
+    let goal = { x: Math.max(2, Math.min(nx - 3, Math.floor(nx * 0.5))), y: Math.max(2, Math.min(ny - 3, Math.floor(ny * 0.5))) };
     let goalVelocity = { dx: controls.goalSpeed, dy: controls.goalSpeed * 0.8 }; // dynamic movement speed
     let showGoal = true;
     
@@ -305,9 +305,17 @@ export default function AgentGridRLBackground({ children }: Props) {
         originalAlpha: controls.learningRate, // Store original alpha
       };
       
-      agents.push(newAgent);
+      // Check if we're at the 7 agent limit
+      if (agents.length >= 7) {
+        // Remove the oldest agent (first in array)
+        const removedAgent = agents.shift();
+        if (removedAgent) {
+          // Add a pulse at the removed agent's location
+          emitPulse(removedAgent.x * (W / nx) + (W / nx) / 2, removedAgent.y * (H / ny) + (H / ny) / 2, 0.8);
+        }
+      }
       
-      // No limits - spawn as many agents as you want!
+      agents.push(newAgent);
     };
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -990,6 +998,16 @@ export default function AgentGridRLBackground({ children }: Props) {
           originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
           originalAlpha: controls.learningRate, // Store original alpha
         };
+        
+        // Check if we're at the 7 agent limit for auto-spawn
+        if (agents.length >= 7) {
+          // Remove the oldest agent (first in array)
+          const removedAgent = agents.shift();
+          if (removedAgent) {
+            // Add a pulse at the removed agent's location
+            emitPulse(removedAgent.x * (W / nx) + (W / nx) / 2, removedAgent.y * (H / ny) + (H / ny) / 2, 0.8);
+          }
+        }
         
         agents.push(newAgent);
         lastSpawnTime = now;

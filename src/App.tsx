@@ -27,7 +27,7 @@ export default function App() {
                 <a href="#research" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition">Explore Research</a>
                 <a href="#contact" className="px-4 py-2 rounded-lg border border-white/20 hover:border-white/40 transition">Contact</a>
               </div>
-              <div className="mt-6 text-sm text-white/60">
+              <div className="mt-6 text-sm text-white/60 max-w-2xl">
                 I am an MS student at Georgia Tech studying RL and robotics in the PAIR Lab under Animesh Garg, focused on achieving generalization in sequential decision making agents
               </div>
             </div>
@@ -69,7 +69,7 @@ export default function App() {
                 </div>
               </div>
               <div className="glass rounded-xl p-4 flex-1">
-                <h3 className="font-semibold mb-3">Resume</h3>
+                <h3 className="font-semibold mb-3 text-center">Resume</h3>
                 <a 
                   href="/resume.pdf" 
                   download="Kunal_Aneja_Resume.pdf"
@@ -108,7 +108,6 @@ export default function App() {
               </p>
             </div>
             <div className="glass rounded-xl p-5">
-              <h3 className="font-semibold mb-3">Reach out</h3>
               <p className="text-white/70 mt-2">Email: <a href={`mailto:${profile.email}`} className="underline">kunala &lt;at&gt; gatech &lt;dot&gt; edu</a></p>
               <p className="text-white/70 mt-1">Location: {profile.location}</p>
               <div className="mt-4 flex gap-3">
