@@ -36,7 +36,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 1, // RL_STEPS multiplier (1x = previous 0.3x speed)
+    stepSpeed: 0.5, // RL_STEPS multiplier (0.5x = slower default speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.015, // goal movement speed (slower for different screens)
@@ -56,7 +56,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     // --- Tunables for subtle vibe ---
     const MAX_RIPPLE = 45;            // allow larger user pulses
     const BG_WARP_AMP = 15;            // base warp amplitude (subtle but flowing)
-    let RL_STEPS = controls.stepSpeed; // dynamic agent motion speed
+    let RL_STEPS = controls.stepSpeed * 0.3; // dynamic agent motion speed (0.5x default = 0.15x actual)
     const AUTOPULSE_PERIOD = 7.5;     // seconds between quiet auto pulses
 
     // Trail settings
@@ -804,7 +804,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       console.assert(showGoal === true, "showGoal should be true by default");
 
       // Test 4c: RL steps slowed
-      console.assert(RL_STEPS === 1, "RL_STEPS should be 1 for slower motion");
+      console.assert(RL_STEPS === 0.15, "RL_STEPS should be 0.15 for slower motion (0.5x * 0.3)");
 
       // Test 5: Big-pulse clamp should not exceed MAX_RIPPLE
       ripples.push({ x: 200, y: 200, t: t0 - 0.05, amp: 22, speed: 260, decay: 1.8 });
@@ -1001,7 +1001,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       // RL: dynamic steps per frame based on controls and speed boost
       const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
-      RL_STEPS = controls.stepSpeed * 0.3 * speedBoostMultiplier; // 1x now = previous 0.3x speed
+      RL_STEPS = controls.stepSpeed * 0.3 * speedBoostMultiplier; // 0.5x default = 0.15x actual speed
       for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);
       
       // Handle agent death and replacement

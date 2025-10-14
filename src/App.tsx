@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import Section from './components/Section'
 import PublicationCard from './components/PublicationCard'
 import ProjectCard from './components/ProjectCard'
+import ExperienceCard from './components/ExperienceCard'
 import EducationCard from './components/EducationCard'
 import AgentGridRLBackground from './components/AgentGridRLBackground'
 import { profile } from './data/profile'
@@ -43,6 +44,12 @@ export default function App() {
         <Section id="projects" title="Projects">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ pointerEvents: "auto" }}>
             {profile.projects.map((p, i) => <ProjectCard key={i} p={p} />)}
+          </div>
+        </Section>
+
+        <Section id="experience" title="Experience">
+          <div className="grid md:grid-cols-1 gap-6 max-w-4xl mx-auto" style={{ pointerEvents: "auto" }}>
+            {profile.experience.map((exp, i) => <ExperienceCard key={i} experience={exp} />)}
           </div>
         </Section>
 
