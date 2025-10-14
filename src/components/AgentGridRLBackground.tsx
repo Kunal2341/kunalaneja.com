@@ -126,6 +126,9 @@ export default function AgentGridRLBackground({ children }: Props) {
       qTableUpdates: 0,
       explorationSteps: 0,
       exploitationSteps: 0,
+      flockCenterX: 0,
+      flockCenterY: 0,
+      agentUpdateAccumulator: 0,
     };
 
     // Moving goal (single shared), shown by default
@@ -490,14 +493,11 @@ export default function AgentGridRLBackground({ children }: Props) {
         moveGoal();
       }
 
-      // Flocking bias (soft)
+      // Flocking bias (soft) - optimized with cached center of mass
       let flockBias = { dx: 0, dy: 0 };
-      if (a.modeFlock) {
-        let cx = 0, cy = 0;
-        for (let k = 0; k < agents.length; k++) { cx += agents[k].x; cy += agents[k].y; }
-        cx /= agents.length; cy /= agents.length;
-        flockBias.dx = (cx - a.x) * 0.02;
-        flockBias.dy = (cy - a.y) * 0.02;
+      if (a.modeFlock && globalStats.flockCenterX !== undefined) {
+        flockBias.dx = (globalStats.flockCenterX - a.x) * 0.02;
+        flockBias.dy = (globalStats.flockCenterY - a.y) * 0.02;
       }
 
       // Optional chaos overlay
@@ -783,11 +783,13 @@ export default function AgentGridRLBackground({ children }: Props) {
         const a = agents[i];
         const [ax, ay] = toPx(a.x, a.y);
 
-        // Trail: draw faded polyline segments from old → recent
+        // Trail: draw faded polyline segments from old → recent (optimized)
         if (a.trail.length >= 2) {
-          ctx.save();
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
+          ctx.beginPath();
+          
+          // Draw all trail segments in one path for better performance
           for (let s = 1; s < a.trail.length; s++) {
             const p0 = a.trail[s - 1];
             const p1 = a.trail[s];
@@ -796,16 +798,16 @@ export default function AgentGridRLBackground({ children }: Props) {
             const t = s / a.trail.length; // 0..1 (older..newer)
             const alpha = TRAIL_ALPHA_MIN + (TRAIL_ALPHA_MAX - TRAIL_ALPHA_MIN) * t;
             const width = TRAIL_WIDTH_MIN + (TRAIL_WIDTH_MAX - TRAIL_WIDTH_MIN) * t;
+            
             ctx.strokeStyle = `hsla(${a.colorHue}, 100%, 65%, ${alpha})`;
             ctx.shadowBlur = 10 * t;
             ctx.shadowColor = `hsla(${a.colorHue}, 100%, 60%, ${alpha * 0.7})`;
             ctx.lineWidth = width;
-            ctx.beginPath();
-            ctx.moveTo(x0, y0);
+            
+            if (s === 1) ctx.moveTo(x0, y0);
             ctx.lineTo(x1, y1);
-            ctx.stroke();
           }
-          ctx.restore();
+          ctx.stroke();
         }
 
         // Agent body (larger) with enhanced glow
@@ -1024,13 +1026,30 @@ export default function AgentGridRLBackground({ children }: Props) {
         }
       }
 
+      // Calculate flock center once per frame (performance optimization)
+      if (agents.length > 0) {
+        let cx = 0, cy = 0;
+        for (let k = 0; k < agents.length; k++) { 
+          cx += agents[k].x; 
+          cy += agents[k].y; 
+        }
+        globalStats.flockCenterX = cx / agents.length;
+        globalStats.flockCenterY = cy / agents.length;
+      }
+
       // RL: dynamic steps per frame based on controls and speed boost
       const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
       RL_STEPS = controls.stepSpeed * 0.3 * speedBoostMultiplier; // 0.5x default = 0.15x actual speed
       
-      // Use Math.random() to achieve fractional steps per frame
-      if (Math.random() < RL_STEPS) {
-        agents.forEach(stepAgent);
+      // Use accumulator for consistent agent updates (better than random)
+      globalStats.agentUpdateAccumulator = (globalStats.agentUpdateAccumulator || 0) + RL_STEPS;
+      if (globalStats.agentUpdateAccumulator >= 1) {
+        const updateCount = Math.floor(globalStats.agentUpdateAccumulator);
+        globalStats.agentUpdateAccumulator -= updateCount;
+        
+        for (let i = 0; i < updateCount; i++) {
+          agents.forEach(stepAgent);
+        }
       }
       
       // Handle agent death and replacement
