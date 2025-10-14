@@ -1182,7 +1182,13 @@ export default function AgentGridRLBackground({ children }: Props) {
               clientX: e.clientX,
               clientY: e.clientY,
               bubbles: true,
-              cancelable: true
+              cancelable: true,
+              view: window,
+              detail: e.detail,
+              screenX: e.screenX,
+              screenY: e.screenY,
+              button: e.button,
+              buttons: e.buttons
             });
             
             // Dispatch to canvas
