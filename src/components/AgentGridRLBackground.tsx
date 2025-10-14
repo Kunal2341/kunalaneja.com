@@ -38,7 +38,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 0.75, // RL_STEPS multiplier (0.75x = reduced default speed)
+    stepSpeed: 1, // RL_STEPS multiplier (1x = new slower default speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.015, // goal movement speed (slower for different screens)
@@ -58,7 +58,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     // --- Tunables for subtle vibe ---
     const MAX_RIPPLE = 45;            // allow larger user pulses
     const BG_WARP_AMP = 15;            // base warp amplitude (subtle but flowing)
-    let RL_STEPS = controls.stepSpeed * 0.3; // dynamic agent motion speed (0.5x default = 0.15x actual)
+    let RL_STEPS = controls.stepSpeed * 0.2; // dynamic agent motion speed (1x default = 0.2x actual, slower than before)
     const AUTOPULSE_PERIOD = 7.5;     // seconds between quiet auto pulses
 
     // Trail settings
@@ -937,7 +937,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       // RL: dynamic steps per frame based on controls and speed boost
       const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
-      RL_STEPS = controls.stepSpeed * 0.3 * speedBoostMultiplier; // 0.5x default = 0.15x actual speed
+      RL_STEPS = controls.stepSpeed * 0.2 * speedBoostMultiplier; // 1x default = 0.2x actual speed (slower than before)
       
       // Use accumulator for consistent agent updates (better than random)
       globalStats.agentUpdateAccumulator = (globalStats.agentUpdateAccumulator || 0) + RL_STEPS;

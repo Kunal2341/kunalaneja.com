@@ -27,8 +27,11 @@ export default function App() {
                 <a href="#research" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition">Explore Research</a>
                 <a href="#contact" className="px-4 py-2 rounded-lg border border-white/20 hover:border-white/40 transition">Contact</a>
               </div>
-              <div className="mt-6 text-sm text-white/60 max-w-2xl">
-                I am an MS student at Georgia Tech studying RL and robotics in the PAIR Lab under Animesh Garg, focused on achieving generalization in sequential decision making agents
+              <div className="mt-6 text-sm text-white max-w-lg relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/80 to-black/60 rounded-lg -m-2 border border-white/20"></div>
+                <p className="relative z-10 p-3 font-light leading-relaxed">
+                  I am a MS student at Georgia Tech studying robot learning with RL in the PAIR Lab under Animesh Garg, focused on achieving generalization in sequential decision making agents
+                </p>
               </div>
             </div>
           </div>
