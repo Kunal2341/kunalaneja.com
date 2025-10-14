@@ -18,6 +18,8 @@ type Props = { children?: React.ReactNode };
 export default function AgentGridRLBackground({ children }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const goalRef = useRef<{x: number, y: number} | null>(null);
+  const gridRef = useRef<{nx: number, ny: number} | null>(null);
   
   // Live statistics state
   const [stats, setStats] = useState({
@@ -85,6 +87,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     const cellPx = 32; // slightly larger cells for calmer look
     let nx = Math.max(8, Math.floor(W / cellPx));
     let ny = Math.max(6, Math.floor(H / cellPx));
+    gridRef.current = { nx, ny };
 
     // Shared Q-table: (ny * nx * 4 actions)
     let Q = new Float32Array(nx * ny * 4);
@@ -132,7 +135,10 @@ export default function AgentGridRLBackground({ children }: Props) {
     };
 
     // Moving goal (single shared), shown by default
-    let goal = { x: Math.max(2, Math.min(nx - 3, Math.floor(nx * 0.5))), y: Math.max(2, Math.min(ny - 3, Math.floor(ny * 0.5))) };
+    if (!goalRef.current) {
+      goalRef.current = { x: Math.max(2, Math.min(nx - 3, Math.floor(nx * 0.5))), y: Math.max(2, Math.min(ny - 3, Math.floor(ny * 0.5))) };
+    }
+    const goal = goalRef.current;
     let goalVelocity = { dx: controls.goalSpeed, dy: controls.goalSpeed * 0.8 }; // dynamic movement speed
     let showGoal = true;
     
@@ -308,8 +314,8 @@ export default function AgentGridRLBackground({ children }: Props) {
         originalAlpha: controls.learningRate, // Store original alpha
       };
       
-      // Check if we're at the 7 agent limit
-      if (agents.length >= 7) {
+      // Check if we're at the 12 agent limit
+      if (agents.length >= 12) {
         // Remove the oldest agent (first in array)
         const removedAgent = agents.shift();
         if (removedAgent) {
@@ -695,6 +701,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       // Recompute nx/ny in case of resize
       nx = Math.max(8, Math.floor(W / cellPx));
       ny = Math.max(6, Math.floor(H / cellPx));
+      gridRef.current = { nx, ny };
 
       const spacingX = W / nx;
       const spacingY = H / ny;
@@ -987,8 +994,8 @@ export default function AgentGridRLBackground({ children }: Props) {
           originalAlpha: controls.learningRate, // Store original alpha
         };
         
-        // Check if we're at the 7 agent limit for auto-spawn
-        if (agents.length >= 7) {
+        // Check if we're at the 12 agent limit for auto-spawn
+        if (agents.length >= 12) {
           // Remove the oldest agent (first in array)
           const removedAgent = agents.shift();
           if (removedAgent) {
@@ -1214,9 +1221,9 @@ export default function AgentGridRLBackground({ children }: Props) {
             setIsPaused(newPausedState);
             
             // Move goal to bottom left when pausing
-            if (newPausedState) {
-              goal.x = 2; // Left side
-              goal.y = ny - 3; // Bottom side
+            if (newPausedState && goalRef.current && gridRef.current) {
+              goalRef.current.x = 2; // Left side
+              goalRef.current.y = gridRef.current.ny - 3; // Bottom side
             }
           }}
           className={`group relative w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 shadow-2xl shadow-black/70 ${
