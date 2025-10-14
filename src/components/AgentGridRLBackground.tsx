@@ -1209,7 +1209,16 @@ export default function AgentGridRLBackground({ children }: Props) {
       <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
         {/* Pause button */}
         <button 
-          onClick={() => setIsPaused(!isPaused)}
+          onClick={() => {
+            const newPausedState = !isPaused;
+            setIsPaused(newPausedState);
+            
+            // Move goal to bottom left when pausing
+            if (newPausedState) {
+              goal.x = 2; // Left side
+              goal.y = ny - 3; // Bottom side
+            }
+          }}
           className={`group relative w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 shadow-2xl shadow-black/70 ${
             isPaused 
               ? 'bg-green-500/20 hover:bg-green-500/30 shadow-green-500/50' 
