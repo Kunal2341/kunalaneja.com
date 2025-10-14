@@ -100,10 +100,19 @@ export default function App() {
         </Section>
 
         <Section id="contact" title="Contact">
-          <div className="flex justify-center">
-            <div className="glass rounded-xl p-5 max-w-md" style={{ pointerEvents: "auto" }}>
-              <h3 className="font-semibold">Reach out</h3>
-              <p className="text-white/70 mt-2">Feel free to reach out if you're interested in my research or just want to chat.</p>
+          <div className="grid md:grid-cols-2 gap-8 items-start" style={{ pointerEvents: "auto" }}>
+            <div>
+              <h3 className="font-semibold mb-3">Get in Touch</h3>
+              <p className="text-white/80">
+                Feel free to reach out if you're interested in my research or just want to chat.
+              </p>
+              <p className="text-white/70 mt-4">
+                I'm always excited to discuss robotics, reinforcement learning, and computer vision. 
+                Whether you have questions about my work or want to collaborate, I'd love to hear from you.
+              </p>
+            </div>
+            <div className="glass rounded-xl p-5">
+              <h3 className="font-semibold mb-3">Reach out</h3>
               <p className="text-white/70 mt-2">Email: <a href={`mailto:${profile.email}`} className="underline">kunala &lt;at&gt; gatech &lt;dot&gt; edu</a></p>
               <p className="text-white/70 mt-1">Location: {profile.location}</p>
               <div className="mt-4 flex gap-3">

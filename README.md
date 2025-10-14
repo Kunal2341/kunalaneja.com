@@ -2,8 +2,6 @@
 
 A modern, interactive portfolio website showcasing research in robotics and reinforcement learning, featuring a dynamic Q-learning canvas background with interactive agents.
 
-![Portfolio Preview](public/survey_img.png)
-
 ## 🚀 Quickstart
 
 ```bash
