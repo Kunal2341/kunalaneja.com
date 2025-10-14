@@ -4,14 +4,25 @@ import type { Experience } from '../data/profile'
 export default function ExperienceCard({ experience }: { experience: Experience }) {
   return (
     <div className="glass rounded-xl p-6 hover:bg-white/5 transition">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
+      <div className="flex items-start gap-4 mb-4">
+        {experience.company.toLowerCase().includes('amazon') && (
+          <img 
+            src="/aws.png" 
+            alt="AWS Logo" 
+            className="w-12 h-auto rounded-lg flex-shrink-0 mt-1 object-contain"
+          />
+        )}
         <div className="flex-1">
-          <h3 className="font-bold text-lg">{experience.position}</h3>
-          <div className="text-white/80 text-base font-semibold">{experience.company}</div>
-          <div className="text-white/70 text-sm">{experience.description}</div>
-        </div>
-        <div className="text-white/60 text-sm mt-1 sm:mt-0 sm:text-right">
-          {experience.period}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
+            <div className="flex-1">
+              <h3 className="font-bold text-lg">{experience.position}</h3>
+              <div className="text-white/80 text-base font-semibold">{experience.company}</div>
+              <div className="text-white/70 text-sm">{experience.description}</div>
+            </div>
+            <div className="text-white/60 text-sm mt-1 sm:mt-0 sm:text-right">
+              {experience.period}
+            </div>
+          </div>
         </div>
       </div>
       

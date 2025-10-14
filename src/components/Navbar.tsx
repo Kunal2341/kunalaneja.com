@@ -3,10 +3,10 @@ import { profile } from '../data/profile'
 
 const links = [
   { href: '#research', label: 'Research' },
-  { href: '#projects', label: 'Projects' },
   { href: '#experience', label: 'Experience' },
-  { href: '#education', label: 'Education' },
   { href: '#about', label: 'About' },
+  { href: '#education', label: 'Education' },
+  { href: '#projects', label: 'Projects' },
   { href: '#contact', label: 'Contact' }
 ]
 
@@ -30,9 +30,9 @@ export default function Navbar() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <a href={profile.socials.github} target="_blank" className="text-white/70 hover:text-white text-sm">GitHub</a>
-            <a href={profile.socials.linkedin} target="_blank" className="text-white/70 hover:text-white text-sm">LinkedIn</a>
-            <a href={profile.socials.scholar} target="_blank" className="text-white/70 hover:text-white text-sm">Scholar</a>
+            <a href={profile.socials.github} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white text-sm">GitHub</a>
+            <a href={profile.socials.linkedin} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white text-sm">LinkedIn</a>
+            <a href={profile.socials.scholar} target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white text-sm">Scholar</a>
           </div>
         </div>
       </div>

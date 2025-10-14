@@ -15,6 +15,7 @@ export type Project = {
   description: string
   tags: string[]
   href?: string
+  date?: string
 }
 
 export type Education = {
@@ -119,19 +120,22 @@ export const profile = {
       title: "LEAP Hand PAIR Integration",
       description: "Integration work with LEAP Hand robotic platform for PAIR Lab research. Implemented Python API and ROS modules for controlling the anthropomorphic robotic hand.",
       tags: ["Python", "ROS", "Robotics", "Hardware Control", "PAIR Lab"],
-      href: "https://github.com/Kunal2341/LEAP_Hand_PAIR"
+      href: "https://github.com/Kunal2341/LEAP_Hand_PAIR",
+      date: "April 2025"
     },
     {
       title: "Dungeon Adventure Game (Android)",
       description: "Multi-room dungeon adventure game for Android with character selection, difficulty levels, and dynamic enemy AI. Built with MVVM architecture and comprehensive testing.",
       tags: ["Android", "Java", "MVVM", "Game Development", "Testing"],
-      href: "https://github.com/Kunal2341/CS2340B_Team15"
+      href: "https://github.com/Kunal2341/CS2340B_Team15",
+      date: "November 2023"
     },
     {
       title: "Hand Pose Estimation Algorithm Comparison",
       description: "Comprehensive evaluation of hand pose estimation models including Google MediaPipe, MMPose, and AlphaPose. Tested 100+ hand images with various augmentation techniques.",
       tags: ["Python", "Computer Vision", "MediaPipe", "MMPose", "Pose Estimation"],
-      href: "https://github.com/Kunal2341/HandPosesAlgorithm"
+      href: "https://github.com/Kunal2341/HandPosesAlgorithm",
+      date: "January 2023"
     }
   ] as Project[],
   education: [

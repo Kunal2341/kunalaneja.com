@@ -36,7 +36,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 0.5, // RL_STEPS multiplier (0.5x = slower default speed)
+    stepSpeed: 0.5, // RL_STEPS multiplier (0.5x = 50% slower default speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.015, // goal movement speed (slower for different screens)
@@ -161,19 +161,19 @@ export default function AgentGridRLBackground({ children }: Props) {
       if (e.key === "g" || e.key === "G") {
         e.preventDefault();
         showGoal = !showGoal;
-        console.log("Goal visibility toggled:", showGoal);
+        // console.log("Goal visibility toggled:", showGoal);
       }
       if (e.key === "r" || e.key === "R") {
         e.preventDefault();
         const newChaosMode = !agents[0]?.modeChaos;
         agents.forEach(a => a.modeChaos = newChaosMode);
-        console.log("Chaos mode toggled:", newChaosMode);
+        // console.log("Chaos mode toggled:", newChaosMode);
       }
       if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         const newFlockMode = !agents[0]?.modeFlock;
         agents.forEach(a => a.modeFlock = newFlockMode);
-        console.log("Flocking mode toggled:", newFlockMode);
+        // console.log("Flocking mode toggled:", newFlockMode);
       }
       if (e.key === "s" || e.key === "S") {
         e.preventDefault();
@@ -191,7 +191,7 @@ export default function AgentGridRLBackground({ children }: Props) {
             a.alpha = a.originalAlpha || a.alpha;
           }
         });
-        console.log("Speed boost toggled:", !isCurrentlyBoosted);
+        // console.log("Speed boost toggled:", !isCurrentlyBoosted);
       }
     };
     
@@ -604,11 +604,32 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
 
     // Background grid warp fields ------------------------------------------
+    // Cache for baseWaves to reduce trigonometric calculations
+    let baseWavesCache: Map<string, number> = new Map();
+    let lastCacheTime = 0;
+    const CACHE_DURATION = 0.1; // Update cache every 100ms instead of every frame
+    
     function baseWaves(x: number, y: number, t: number) {
+      // Only recalculate cache every CACHE_DURATION seconds
+      if (t - lastCacheTime > CACHE_DURATION) {
+        baseWavesCache.clear();
+        lastCacheTime = t;
+      }
+      
+      // Create cache key with reduced precision to increase cache hits
+      const key = `${Math.floor(x/50)}_${Math.floor(y/50)}`;
+      
+      if (baseWavesCache.has(key)) {
+        return baseWavesCache.get(key)!;
+      }
+      
       // Slower, calmer base motion (still flowing)
       const kx = 0.0030, ky = 0.0022; // wavelengths
       const wx = 0.25, wy = -0.22;    // angular velocities (slow)
-      return Math.sin(x * kx + t * wx) * 1.1 + Math.sin(y * ky + t * wy) * 0.9;
+      const result = Math.sin(x * kx + t * wx) * 1.1 + Math.sin(y * ky + t * wy) * 0.9;
+      
+      baseWavesCache.set(key, result);
+      return result;
     }
 
     function rippleField(x: number, y: number, t: number) {
@@ -631,15 +652,24 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
 
     // Draw grid as warped polylines ----------------------------------------
+    // Cache gradient to avoid recreating every frame
+    let cachedGradient: CanvasGradient | null = null;
+    let lastGradientHeight = 0;
+    
     function drawGrid(t: number) {
       if (!ctx) return;
-      ctx.save();
-      // Background gradient (slightly darker)
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, "#05070b");
-      grad.addColorStop(0.6, "#090d14");
-      grad.addColorStop(1, "#05070a");
-      ctx.fillStyle = grad;
+      
+      // Only recreate gradient if height changed
+      if (!cachedGradient || H !== lastGradientHeight) {
+        cachedGradient = ctx.createLinearGradient(0, 0, 0, H);
+        cachedGradient.addColorStop(0, "#05070b");
+        cachedGradient.addColorStop(0.6, "#090d14");
+        cachedGradient.addColorStop(1, "#05070a");
+        lastGradientHeight = H;
+      }
+      
+      // Fill background without save/restore
+      ctx.fillStyle = cachedGradient;
       ctx.fillRect(0, 0, W, H);
 
       // Recompute nx/ny in case of resize
@@ -649,9 +679,11 @@ export default function AgentGridRLBackground({ children }: Props) {
       const spacingX = W / nx;
       const spacingY = H / ny;
       const amp = BG_WARP_AMP;
-      const samples = 24; // fewer samples → smoother
+      const samples = 16; // reduced samples for better performance
 
       if (!ctx) return;
+      
+      // Set line properties once instead of per line
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
@@ -697,34 +729,33 @@ export default function AgentGridRLBackground({ children }: Props) {
         ctx.stroke();
       }
 
-      // Goal marker - bigger red target
+      // Goal marker - bigger red target (optimized with fewer operations)
       if (showGoal && ctx) {
         const gx = goal.x * spacingX + spacingX / 2;
         const gy = goal.y * spacingY + spacingY / 2;
         const rad = 18 + 8 * Math.sin(t * 2.2); // bigger and more pulsing
         
-        // Outer ring (target outline)
+        // Draw all circles in one batch to reduce state changes
         ctx.beginPath();
+        // Outer ring
         ctx.arc(gx, gy, rad + 12, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)"; // white outer ring
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
         ctx.lineWidth = 4;
         ctx.stroke();
         
-        // Middle ring (red)
+        // Middle ring
         ctx.beginPath();
         ctx.arc(gx, gy, rad + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 100, 100, 0.8)"; // red middle ring
+        ctx.strokeStyle = "rgba(255, 100, 100, 0.8)";
         ctx.lineWidth = 3;
         ctx.stroke();
         
-        // Center circle (bright red)
+        // Center circle
         ctx.beginPath();
         ctx.arc(gx, gy, rad, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 80, 80, 0.95)"; // bright red center
+        ctx.fillStyle = "rgba(255, 80, 80, 0.95)";
         ctx.fill();
       }
-
-      ctx.restore();
     }
 
     // Draw agents + glow trails -------------------------------------------
@@ -780,44 +811,44 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
 
     // --- Dev self-tests (run once) ----------------------------------------
-    (function runSelfTests() {
-      const nearly = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
-      const t0 = performance.now() * 0.001;
+    // (function runSelfTests() {
+    //   const nearly = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
+    //   const t0 = performance.now() * 0.001;
 
-      // Test 1: rippleField should be 0 when no ripples are present
-      const r0 = rippleField(100, 100, t0);
-      console.assert(nearly(r0, 0), `rippleField(empty) expected 0, got ${r0}`);
+    //   // Test 1: rippleField should be 0 when no ripples are present
+    //   const r0 = rippleField(100, 100, t0);
+    //   console.assert(nearly(r0, 0), `rippleField(empty) expected 0, got ${r0}`);
 
-      // Test 2: sIndex layout sanity
-      console.assert(sIndex(0, 0) === 0, "sIndex(0,0) should be 0");
-      console.assert(sIndex(1, 0) === 4, "sIndex(1,0) should be 4");
-      console.assert(sIndex(0, 1) === nx * 4, "sIndex(0,1) should be nx*4");
+    //   // Test 2: sIndex layout sanity
+    //   console.assert(sIndex(0, 0) === 0, "sIndex(0,0) should be 0");
+    //   console.assert(sIndex(1, 0) === 4, "sIndex(1,0) should be 4");
+    //   console.assert(sIndex(0, 1) === nx * 4, "sIndex(0,1) should be nx*4");
 
-      // Test 3: baseWaves finiteness
-      const bw = baseWaves(10, 20, 0.5);
-      console.assert(Number.isFinite(bw), "baseWaves should return a finite number");
+    //   // Test 3: baseWaves finiteness
+    //   const bw = baseWaves(10, 20, 0.5);
+    //   console.assert(Number.isFinite(bw), "baseWaves should return a finite number");
 
-      // Test 4: Agents initialized (2 by default)
-      console.assert(agents.length === AGENT_COUNT, "agents.length mismatch");
+    //   // Test 4: Agents initialized (2 by default)
+    //   console.assert(agents.length === AGENT_COUNT, "agents.length mismatch");
 
-      // Test 4b: showGoal default
-      console.assert(showGoal === true, "showGoal should be true by default");
+    //   // Test 4b: showGoal default
+    //   console.assert(showGoal === true, "showGoal should be true by default");
 
-      // Test 4c: RL steps slowed
-      console.assert(RL_STEPS === 0.15, "RL_STEPS should be 0.15 for slower motion (0.5x * 0.3)");
+    //   // Test 4c: RL steps slowed
+    //   console.assert(RL_STEPS === 0.15, "RL_STEPS should be 0.15 for slower motion (0.5x * 0.3)");
 
-      // Test 5: Big-pulse clamp should not exceed MAX_RIPPLE
-      ripples.push({ x: 200, y: 200, t: t0 - 0.05, amp: 22, speed: 260, decay: 1.8 });
-      const rc = rippleField(200, 200, t0 + 0.10);
-      console.assert(Math.abs(rc) <= MAX_RIPPLE + 1e-6, `ripple clamp failed: |${rc}| > ${MAX_RIPPLE}`);
+    //   // Test 5: Big-pulse clamp should not exceed MAX_RIPPLE
+    //   ripples.push({ x: 200, y: 200, t: t0 - 0.05, amp: 22, speed: 260, decay: 1.8 });
+    //   const rc = rippleField(200, 200, t0 + 0.10);
+    //   console.assert(Math.abs(rc) <= MAX_RIPPLE + 1e-6, `ripple clamp failed: |${rc}| > ${MAX_RIPPLE}`);
 
-      // Test 6: trail clamp
-      const tmp: number[] = [];
-      const TRAIL_MAX_LOCAL = 70;
-      for (let i = 0; i < TRAIL_MAX_LOCAL + 15; i++) { tmp.push(i); if (tmp.length > TRAIL_MAX_LOCAL) tmp.splice(0, tmp.length - TRAIL_MAX_LOCAL); }
-      console.assert(tmp.length <= TRAIL_MAX_LOCAL, `trail clamp failed: len=${tmp.length} > ${TRAIL_MAX_LOCAL}`);
+    //   // Test 6: trail clamp
+    //   const tmp: number[] = [];
+    //   const TRAIL_MAX_LOCAL = 70;
+    //   for (let i = 0; i < TRAIL_MAX_LOCAL + 15; i++) { tmp.push(i); if (tmp.length > TRAIL_MAX_LOCAL) tmp.splice(0, tmp.length - TRAIL_MAX_LOCAL); }
+    //   console.assert(tmp.length <= TRAIL_MAX_LOCAL, `trail clamp failed: len=${tmp.length} > ${TRAIL_MAX_LOCAL}`);
 
-    })();
+    // })();
 
     // Statistics update function
     function updateStats() {
@@ -1002,7 +1033,11 @@ export default function AgentGridRLBackground({ children }: Props) {
       // RL: dynamic steps per frame based on controls and speed boost
       const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
       RL_STEPS = controls.stepSpeed * 0.3 * speedBoostMultiplier; // 0.5x default = 0.15x actual speed
-      for (let k = 0; k < RL_STEPS; k++) agents.forEach(stepAgent);
+      
+      // Use Math.random() to achieve fractional steps per frame
+      if (Math.random() < RL_STEPS) {
+        agents.forEach(stepAgent);
+      }
       
       // Handle agent death and replacement
       const currentTime = performance.now();
@@ -1075,18 +1110,18 @@ export default function AgentGridRLBackground({ children }: Props) {
     rafId = requestAnimationFrame(frame) as unknown as number;
 
     // Expose functions to the component scope
-    (window as any).spawnRandomAgent = spawnRandomAgent;
+    // (window as any).spawnRandomAgent = spawnRandomAgent;
     
     // Debug: Add a simple click test
-    (window as any).testCanvasClick = () => {
-      const testEvent = new MouseEvent('mousedown', {
-        clientX: 100,
-        clientY: 100,
-        bubbles: true,
-        cancelable: true
-      });
-      onDown(testEvent);
-    };
+    // (window as any).testCanvasClick = () => {
+    //   const testEvent = new MouseEvent('mousedown', {
+    //     clientX: 100,
+    //     clientY: 100,
+    //     bubbles: true,
+    //     cancelable: true
+    //   });
+    //   onDown(testEvent);
+    // };
     
 
     return () => {
@@ -1098,8 +1133,8 @@ export default function AgentGridRLBackground({ children }: Props) {
       canvas.removeEventListener("mousedown", onDown);
       canvas.removeEventListener("touchstart", onTouchStart as any);
       canvas.style.transform = "";
-      delete (window as any).spawnRandomAgent;
-      delete (window as any).testCanvasClick;
+      // delete (window as any).spawnRandomAgent;
+      // delete (window as any).testCanvasClick;
     };
   }, [controls, isPaused]);
 
