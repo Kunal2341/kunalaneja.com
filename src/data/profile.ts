@@ -43,7 +43,8 @@ export const profile = {
   name: "Kunal Aneja",
   tagline: "Research Engineer • RL • VLA • Robotics",
   location: "Atlanta, GA",
-  email: "kunala <at> gatech.edu",
+  email: "kunala@gatech.edu",
+  emailDisplay: "kunala <at> gatech.edu",
   socials: {
     github: "https://github.com/Kunal2341",
     scholar: "https://scholar.google.com/citations?user=Faop3qAAAAAJ&hl=en",
