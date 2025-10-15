@@ -114,6 +114,16 @@ export const profile = {
         { label: "Paper", href: "https://arxiv.org/abs/2301.02310" },
         { label: "Code/Data", href: "https://github.com/pressurevision/pressurevision" }
       ]
+    },
+    {
+      title: "Sparse view 3D reconstruction with Gaussian splatting",
+      authors: "Sri Siddarth Chakaravarthy, Jinchu Li, Kunal Aneja, Sohan Malladi",
+      venue: "*Best Project Deep Learning Fall '24*",
+      status: "accepted",
+      links: [
+        { label: "Poster", href: "/4644_Poster.pdf" },
+        { label: "Paper", href: "/4644_Research_Paper.pdf" }
+      ]
     }
   ] as Publication[],
   projects: [
@@ -137,6 +147,13 @@ export const profile = {
       tags: ["Python", "Computer Vision", "MediaPipe", "MMPose", "Pose Estimation"],
       href: "https://github.com/Kunal2341/HandPosesAlgorithm",
       date: "January 2023"
+    },
+    {
+      title: "Augmenting a Firefighter's SCBA",
+      description: "Created a firefighter HUD (head-up display) using Google Glass. Conducted real-world simulations to gather feedback from relevant professionals.",
+      tags: ["User Interface Design", "Google Glass", "HUD", "UX Research", "Simulation"],
+      href: "#",
+      date: "July 2022"
     }
   ] as Project[],
   education: [

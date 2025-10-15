@@ -2,6 +2,9 @@ import React from 'react'
 import type { Publication } from '../data/profile'
 
 export default function PublicationCard({ pub }: { pub: Publication }) {
+  // Check if this is a class project (less prominent styling)
+  const isClassProject = pub.title.includes('CS 4644') || pub.title.includes('Deep Learning Research Project');
+  
   // Function to make "Kunal Aneja" bold in author strings
   const formatAuthors = (authors: string) => {
     return authors.split(',').map((author, index) => {
@@ -27,7 +30,7 @@ export default function PublicationCard({ pub }: { pub: Publication }) {
   };
 
   return (
-    <div className="glass rounded-xl p-6 hover:bg-white/5 transition">
+    <div className={`glass rounded-xl ${isClassProject ? 'p-4' : 'p-6'} ${isClassProject ? 'bg-white/5 hover:bg-white/8' : 'hover:bg-white/5'} transition`}>
       {/* Image/Video */}
       {pub.image ? (
         <div className={`w-full rounded-lg mb-4 overflow-hidden ${pub.title.includes('AMPLIFY') ? 'h-40' : 'h-48'}`}>
@@ -64,15 +67,21 @@ export default function PublicationCard({ pub }: { pub: Publication }) {
           </div>
         </div>
       ) : (
-        <div className="w-full h-48 bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg mb-4 flex items-center justify-center">
+        <div className={`w-full ${isClassProject ? 'h-32' : 'h-48'} bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg mb-4 flex items-center justify-center`}>
           <div className="text-white/40 text-sm">Paper Image</div>
         </div>
       )}
       
-      <h3 className="font-bold text-lg leading-tight mb-2">{pub.title}</h3>
-      <div className="text-white/80 text-base mb-2">{formatAuthors(pub.authors)}</div>
+      <h3 className={`${isClassProject ? 'font-semibold text-base' : 'font-bold text-lg'} leading-tight mb-2`}>{pub.title}</h3>
+      <div className={`${isClassProject ? 'text-white/70 text-sm' : 'text-white/80 text-base'} mb-2`}>{formatAuthors(pub.authors)}</div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <div className="text-white/60 text-base">{pub.venue} {pub.year}</div>
+        <div className={`${isClassProject ? 'text-white/50 text-sm' : 'text-white/60 text-base'}`}>
+          {pub.venue.includes('*') ? (
+            <span dangerouslySetInnerHTML={{ 
+              __html: pub.venue.replace(/\*(.*?)\*/g, '<em>$1</em>') 
+            }} />
+          ) : pub.venue} {pub.year}
+        </div>
         {pub.lab && (
           <div className="mt-1 sm:mt-0">
             <a 
@@ -89,7 +98,7 @@ export default function PublicationCard({ pub }: { pub: Publication }) {
       {pub.links && pub.links.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {pub.links.map((l, i) => (
-            <a key={i} href={l.href} target="_blank" rel="noopener noreferrer" className="text-base px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 transition font-medium">
+            <a key={i} href={l.href} target="_blank" rel="noopener noreferrer" className={`${isClassProject ? 'text-sm px-3 py-2' : 'text-base px-4 py-2.5'} rounded-lg bg-white/10 hover:bg-white/20 transition font-medium`}>
               {l.label}
             </a>
           ))}
