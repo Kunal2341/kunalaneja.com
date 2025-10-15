@@ -4,6 +4,11 @@ import type { Publication } from '../data/profile'
 export default function PublicationCard({ pub }: { pub: Publication }) {
   // Check if this is a class project (less prominent styling)
   const isClassProject = pub.title.includes('CS 4644') || pub.title.includes('Deep Learning Research Project');
+  // Keep normal sizes for all non-class items; only class projects are smaller
+  const isGaussianSplattingCard = pub.title === 'Sparse view 3D reconstruction with Gaussian splatting';
+  const titleSizeClass = isClassProject ? 'text-base' : 'text-lg';
+  const bodySizeClass = isClassProject ? 'text-sm' : 'text-base';
+  const titleWeightClass = isGaussianSplattingCard ? 'font-normal' : (isClassProject ? 'font-semibold' : 'font-bold');
   
   // Function to make "Kunal Aneja" bold in author strings
   const formatAuthors = (authors: string) => {
@@ -72,10 +77,10 @@ export default function PublicationCard({ pub }: { pub: Publication }) {
         </div>
       )}
       
-      <h3 className={`${isClassProject ? 'font-semibold text-base' : 'font-bold text-lg'} leading-tight mb-2`}>{pub.title}</h3>
-      <div className={`${isClassProject ? 'text-white/70 text-sm' : 'text-white/80 text-base'} mb-2`}>{formatAuthors(pub.authors)}</div>
+      <h3 className={`${titleWeightClass} ${titleSizeClass} leading-tight mb-2`}>{pub.title}</h3>
+      <div className={`text-white/${isClassProject ? '70' : '80'} ${bodySizeClass} mb-2`}>{formatAuthors(pub.authors)}</div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <div className={`${isClassProject ? 'text-white/50 text-sm' : 'text-white/60 text-base'}`}>
+        <div className={`${isClassProject ? 'text-white/50' : 'text-white/60'} ${bodySizeClass}`}>
           {pub.venue.includes('*') ? (
             <span dangerouslySetInnerHTML={{ 
               __html: pub.venue.replace(/\*(.*?)\*/g, '<em>$1</em>') 

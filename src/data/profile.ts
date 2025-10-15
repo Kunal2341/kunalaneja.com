@@ -119,6 +119,7 @@ export const profile = {
       title: "Sparse view 3D reconstruction with Gaussian splatting",
       authors: "Sri Siddarth Chakaravarthy, Jinchu Li, Kunal Aneja, Sohan Malladi",
       venue: "*Best Project Deep Learning Fall '24*",
+      image: "/final_clean_showcase_16x9_fast.gif",
       status: "accepted",
       links: [
         { label: "Poster", href: "/4644_Poster.pdf" },
@@ -128,30 +129,37 @@ export const profile = {
   ] as Publication[],
   projects: [
     {
+      title: "Personal Website Portfolio",
+      description: "This portfolio website built with React, TypeScript, Tailwind CSS, and Vite. Deployed via GitHub Pages with CI/CD.",
+      tags: ["React", "TypeScript", "Tailwind"],
+      href: "https://github.com/Kunal2341/kunalaneja.com",
+      date: "October 2025"
+    },
+    {
       title: "LEAP Hand PAIR Integration",
       description: "Integration work with LEAP Hand robotic platform for PAIR Lab research. Implemented Python API and ROS modules for controlling the anthropomorphic robotic hand.",
-      tags: ["Python", "ROS", "Robotics", "Hardware Control", "PAIR Lab"],
+      tags: ["Python", "ROS", "Robotics", "Hardware Control"],
       href: "https://github.com/Kunal2341/LEAP_Hand_PAIR",
       date: "April 2025"
     },
     {
       title: "Dungeon Adventure Game (Android)",
       description: "Multi-room dungeon adventure game for Android with character selection, difficulty levels, and dynamic enemy AI. Built with MVVM architecture and comprehensive testing.",
-      tags: ["Android", "Java", "MVVM", "Game Development", "Testing"],
+      tags: ["Android", "Java", "MVVM", "Game Development"],
       href: "https://github.com/Kunal2341/CS2340B_Team15",
       date: "November 2023"
     },
     {
       title: "Hand Pose Estimation Algorithm Comparison",
       description: "Comprehensive evaluation of hand pose estimation models including Google MediaPipe, MMPose, and AlphaPose. Tested 100+ hand images with various augmentation techniques.",
-      tags: ["Python", "Computer Vision", "MediaPipe", "MMPose", "Pose Estimation"],
+      tags: ["Python", "Computer Vision", "Pose Estimation"],
       href: "https://github.com/Kunal2341/HandPosesAlgorithm",
       date: "January 2023"
     },
     {
       title: "Augmenting a Firefighter's SCBA",
       description: "Created a firefighter HUD (head-up display) using Google Glass. Conducted real-world simulations to gather feedback from relevant professionals.",
-      tags: ["User Interface Design", "Google Glass", "HUD", "UX Research", "Simulation"],
+      tags: ["Google Glass", "UX Research", "User Interface Design"],
       href: "#",
       date: "July 2022"
     }
