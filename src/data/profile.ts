@@ -122,8 +122,8 @@ export const profile = {
       image: "/final_clean_showcase_16x9_fast.gif",
       status: "accepted",
       links: [
-        { label: "Poster", href: "/4644_Poster.pdf" },
-        { label: "Paper", href: "/4644_Research_Paper.pdf" }
+        { label: "Poster", href: "/gaussian_splatting_poster.pdf" },
+        { label: "Paper", href: "/gaussian_splatting_paper.pdf" }
       ]
     }
   ] as Publication[],
