@@ -73,7 +73,7 @@ export const profile = {
       labUrl: "https://www.pair.toronto.edu/",
       links: [
         { label: "Website", href: "https://amplify-robotics.github.io/" },
-        { label: "arXiv", href: "https://arxiv.org/abs/2402.18660" },
+        { label: "arXiv", href: "https://arxiv.org/abs/2506.14198" },
         { label: "Code", href: "https://github.com/pairlab/AMPLIFY" }
       ]
     },
