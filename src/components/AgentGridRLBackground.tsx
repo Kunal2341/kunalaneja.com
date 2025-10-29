@@ -53,6 +53,7 @@ export default function AgentGridRLBackground({ children }: Props) {
   const controlsRef = useRef(controls);
   const isPausedRef = useRef(isPaused);
   const isFlowFrozenRef = useRef(isFlowFrozen);
+  const boostRef = useRef(false);
 
   useEffect(() => {
     controlsRef.current = controls;
@@ -157,8 +158,6 @@ export default function AgentGridRLBackground({ children }: Props) {
       lifespan: number;
       isSpawned: boolean;
       speedBoost: boolean;
-      originalEps: number;
-      originalAlpha: number;
       decisionAccumulator: number;
     };
 
@@ -169,7 +168,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       overrides: Partial<AgentState> = {}
     ): AgentState => {
       const snapshot = getControls();
-      const epsBase = snapshot.explorationRate + Math.random() * 0.25;
+      const epsBase = snapshot.explorationRate;
       const learning = snapshot.learningRate;
       return {
         x: spawnX,
@@ -198,8 +197,6 @@ export default function AgentGridRLBackground({ children }: Props) {
         lifespan: 40000,
         isSpawned: false,
         speedBoost: false,
-        originalEps: epsBase,
-        originalAlpha: learning,
         decisionAccumulator: 0,
         ...overrides,
       };
@@ -218,6 +215,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         isSpawned: overrides.isSpawned ?? true,
         ...overrides,
       });
+      agent.speedBoost = boostRef.current;
       agents.push(agent);
       return agent;
     };
@@ -302,21 +300,11 @@ export default function AgentGridRLBackground({ children }: Props) {
       }
       if (e.key === "s" || e.key === "S") {
         e.preventDefault();
-        // Toggle speed boost mode
-        const isCurrentlyBoosted = agents[0]?.speedBoost || false;
+        boostRef.current = !boostRef.current;
         agents.forEach(a => {
-          a.speedBoost = !isCurrentlyBoosted;
-          if (a.speedBoost) {
-            a.originalEps = a.eps;
-            a.originalAlpha = a.alpha;
-            a.eps = Math.min(0.8, a.eps * 1.5); // Increase exploration
-            a.alpha = Math.min(0.5, a.alpha * 1.3); // Increase learning
-          } else {
-            a.eps = a.originalEps || a.eps;
-            a.alpha = a.originalAlpha || a.alpha;
-          }
+          a.speedBoost = boostRef.current;
         });
-        // console.log("Speed boost toggled:", !isCurrentlyBoosted);
+        // console.log("Speed boost toggled:", boostRef.current);
       }
     };
     
@@ -470,8 +458,8 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     function stepAgent(a: AgentState, dt: number, currentControls: typeof controls) {
       if (!canvas) return;
-      const expectedNx = Math.max(8, Math.floor(canvas.clientWidth / cellPx));
-      const expectedNy = Math.max(6, Math.floor(canvas.clientHeight / cellPx));
+      const expectedNx = Math.max(8, Math.floor(W / cellPx));
+      const expectedNy = Math.max(6, Math.floor(H / cellPx));
       if (expectedNx !== nx || expectedNy !== ny) {
         nx = expectedNx;
         ny = expectedNy;
