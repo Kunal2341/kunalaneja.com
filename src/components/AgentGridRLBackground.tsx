@@ -38,7 +38,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Control parameters state
   const [controls, setControls] = useState({
-    stepSpeed: 1, // RL_STEPS multiplier (1x = new slower default speed)
+    stepSpeed: 1, // base decision rate multiplier (1x = relaxed default speed)
     learningRate: 0.22, // alpha (fixed)
     explorationRate: 0.20, // initial epsilon (fixed)
     goalSpeed: 0.015, // goal movement speed (slower for different screens)
@@ -48,9 +48,11 @@ export default function AgentGridRLBackground({ children }: Props) {
 
   // Pause state
   const [isPaused, setIsPaused] = useState(false);
+  const [isFlowFrozen, setIsFlowFrozen] = useState(true);
 
   const controlsRef = useRef(controls);
   const isPausedRef = useRef(isPaused);
+  const isFlowFrozenRef = useRef(isFlowFrozen);
 
   useEffect(() => {
     controlsRef.current = controls;
@@ -59,6 +61,9 @@ export default function AgentGridRLBackground({ children }: Props) {
   useEffect(() => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
+  useEffect(() => {
+    isFlowFrozenRef.current = isFlowFrozen;
+  }, [isFlowFrozen]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -68,6 +73,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     const getControls = () => controlsRef.current;
     const getIsPaused = () => isPausedRef.current;
+    const getIsFlowFrozen = () => isFlowFrozenRef.current;
     let last = performance.now() * 0.001;
 
     const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -89,11 +95,10 @@ export default function AgentGridRLBackground({ children }: Props) {
     // --- Tunables for subtle vibe ---
     const MAX_RIPPLE = 45;            // allow larger user pulses
     const BG_WARP_AMP = 15;            // base warp amplitude (subtle but flowing)
-    let RL_STEPS = getControls().stepSpeed * 0.2; // dynamic agent motion speed (1x default = 0.2x actual, slower than before)
     const AUTOPULSE_PERIOD = 7.5;     // seconds between quiet auto pulses
 
     // Trail settings
-    const TRAIL_MAX = 70;             // max stored points per agent
+    const TRAIL_MAX = 110;             // max stored points per agent
     const AGENT_RADIUS = 8.5;         // much larger visible agent
     const TRAIL_WIDTH_MIN = 1.5;      // at head: width grows
     const TRAIL_WIDTH_MAX = 4.5;      // near head
@@ -125,31 +130,106 @@ export default function AgentGridRLBackground({ children }: Props) {
     const A_UP = 0, A_RIGHT = 1, A_DOWN = 2, A_LEFT = 3;
     const ACTIONS = [A_UP, A_RIGHT, A_DOWN, A_LEFT] as const;
 
+    type AgentState = {
+      x: number;
+      y: number;
+      prevX: number;
+      prevY: number;
+      renderX: number;
+      renderY: number;
+      velocityX: number;
+      velocityY: number;
+      targetX: number;
+      targetY: number;
+      trail: Array<{x:number,y:number}>;
+      trailDistanceAcc: number;
+      eps: number;
+      alpha: number;
+      gamma: number;
+      modeChaos: boolean;
+      modeFlock: boolean;
+      colorHue: number;
+      goalsReached: number;
+      steps: number;
+      totalReward: number;
+      birthTime: number;
+      lifespan: number;
+      isSpawned: boolean;
+      speedBoost: boolean;
+      originalEps: number;
+      originalAlpha: number;
+      decisionAccumulator: number;
+    };
+
+    const makeAgent = (
+      spawnX: number,
+      spawnY: number,
+      baseHue: number,
+      overrides: Partial<AgentState> = {}
+    ): AgentState => {
+      const snapshot = getControls();
+      const epsBase = snapshot.explorationRate + Math.random() * 0.25;
+      const learning = snapshot.learningRate;
+      return {
+        x: spawnX,
+        y: spawnY,
+        prevX: spawnX,
+        prevY: spawnY,
+        renderX: spawnX,
+        renderY: spawnY,
+        velocityX: 0,
+        velocityY: 0,
+        targetX: spawnX,
+        targetY: spawnY,
+        trail: [{ x: spawnX, y: spawnY }],
+        trailDistanceAcc: 0,
+        eps: epsBase,
+        alpha: learning,
+        gamma: 0.96,
+        modeChaos: false,
+        modeFlock: true,
+        colorHue: baseHue,
+        goalsReached: 0,
+        steps: 0,
+        totalReward: 0,
+        birthTime: performance.now(),
+        lifespan: 40000,
+        isSpawned: false,
+        speedBoost: false,
+        originalEps: epsBase,
+        originalAlpha: learning,
+        decisionAccumulator: 0,
+        ...overrides,
+      };
+    };
+    
+    const spawnAgent = (
+      spawnX: number,
+      spawnY: number,
+      overrides: Partial<AgentState> = {}
+    ) => {
+      const hue =
+        overrides.colorHue !== undefined
+          ? overrides.colorHue
+          : 180 + Math.floor(Math.random() * 120);
+      const agent = makeAgent(spawnX, spawnY, hue, {
+        isSpawned: overrides.isSpawned ?? true,
+        ...overrides,
+      });
+      agents.push(agent);
+      return agent;
+    };
+
     function sIndex(x: number, y: number) { return (y * nx + x) * 4; }
 
     // Agents (subtle: few)
     const AGENT_COUNT = 5; // set to 1 if you want literally one agent
     const agentColors = [200, 240, 280, 320, 360]; // distinct color hues for each agent
-    const agents = Array.from({ length: AGENT_COUNT }, (_, i) => ({
-      x: Math.floor(Math.random() * nx),
-      y: Math.floor(Math.random() * ny),
-      eps: 0.20 + Math.random() * 0.25, // slightly less exploration to reduce jitter
-      alpha: 0.22, // learning rate
-      gamma: 0.96, // discount
-      modeChaos: false,
-      modeFlock: true,
-      colorHue: agentColors[i], // each agent gets a distinct color
-      trail: [] as Array<{x:number,y:number}>,       // history in grid coords
-      goalsReached: 0, // track individual agent performance
-      steps: 0, // track steps taken by this agent
-      totalReward: 0, // track cumulative reward
-      birthTime: performance.now(), // Track when agent was created
-      lifespan: 40000, // 40 seconds in milliseconds
-      isSpawned: false, // Mark as initial agent (permanent)
-      speedBoost: false, // Speed boost mode
-      originalEps: 0.2, // Store original epsilon for speed boost
-      originalAlpha: 0.22, // Store original alpha for speed boost
-    }));
+    const agents: AgentState[] = Array.from({ length: AGENT_COUNT }, (_, i) => {
+      const spawnX = Math.floor(Math.random() * nx);
+      const spawnY = Math.floor(Math.random() * ny);
+      return makeAgent(spawnX, spawnY, agentColors[i], { isSpawned: false });
+    });
     
     // Global statistics tracking
     let globalStats = {
@@ -162,7 +242,6 @@ export default function AgentGridRLBackground({ children }: Props) {
       exploitationSteps: 0,
       flockCenterX: 0,
       flockCenterY: 0,
-      agentUpdateAccumulator: 0,
     };
 
     // Moving goal (single shared), shown by default
@@ -290,28 +369,6 @@ export default function AgentGridRLBackground({ children }: Props) {
       
       
       // Create new agent with random properties
-      const currentControls = getControls();
-      const newAgent = {
-        x: clampedX,
-        y: clampedY,
-        eps: currentControls.explorationRate + Math.random() * 0.25,
-        alpha: currentControls.learningRate,
-        gamma: 0.96,
-        modeChaos: false,
-        modeFlock: true,
-        colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range (180-300 degrees)
-        trail: [] as Array<{x:number,y:number}>,
-        goalsReached: 0,
-        steps: 0,
-        totalReward: 0,
-        birthTime: performance.now(), // Track when agent was created
-        lifespan: 40000, // 40 seconds in milliseconds (only applies if >5 agents)
-        isSpawned: true, // Mark as user-spawned (not initial)
-        speedBoost: false, // Speed boost mode
-        originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
-        originalAlpha: currentControls.learningRate, // Store original alpha
-      };
-      
       // Check if we're at the 12 agent limit
       if (agents.length >= 12) {
         // Remove the oldest agent (first in array)
@@ -322,7 +379,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         }
       }
       
-      agents.push(newAgent);
+      spawnAgent(clampedX, clampedY, { isSpawned: true });
     };
 
     canvas.addEventListener("mousemove", onMove);
@@ -409,140 +466,208 @@ export default function AgentGridRLBackground({ children }: Props) {
       return idx[(Math.random() * idx.length) | 0];
     }
 
-    function stepAgent(a: typeof agents[number]) {
-      // (Re-)dimension safeguard
+    function stepAgent(a: AgentState, dt: number, currentControls: typeof controls) {
       if (!canvas) return;
-      const currentControls = getControls();
       const expectedNx = Math.max(8, Math.floor(canvas.clientWidth / cellPx));
       const expectedNy = Math.max(6, Math.floor(canvas.clientHeight / cellPx));
       if (expectedNx !== nx || expectedNy !== ny) {
-        nx = expectedNx; ny = expectedNy;
+        nx = expectedNx;
+        ny = expectedNy;
         Q = new Float32Array(nx * ny * 4);
         a.x = clamp(a.x, 0, nx - 1);
         a.y = clamp(a.y, 0, ny - 1);
-        a.trail.length = 0; // reset trail on significant grid change to avoid jumps
+        a.prevX = a.x;
+        a.prevY = a.y;
+        a.renderX = a.x;
+        a.renderY = a.y;
+        a.targetX = a.x;
+        a.targetY = a.y;
+        a.velocityX = 0;
+        a.velocityY = 0;
+        a.trail.length = 0;
+        a.trail.push({ x: a.x, y: a.y });
+        a.trailDistanceAcc = 0;
         ensureGoalWithinBounds();
       }
 
-      // Flocking bias (soft) - optimized with cached center of mass
-      let flockBias = { dx: 0, dy: 0 };
-      if (a.modeFlock && globalStats.flockCenterX !== undefined) {
-        flockBias.dx = (globalStats.flockCenterX - a.x) * 0.02;
-        flockBias.dy = (globalStats.flockCenterY - a.y) * 0.02;
+      const speedBoostMultiplier = a.speedBoost ? 3 : 1;
+      const stepRate = currentControls.stepSpeed * 12 * speedBoostMultiplier;
+      a.decisionAccumulator += dt * stepRate;
+      let iterations = Math.floor(a.decisionAccumulator);
+      if (iterations <= 0) {
+        return;
       }
+      a.decisionAccumulator -= iterations;
 
-      // Optional chaos overlay
-      const chaosDx = a.modeChaos ? (Math.random() - 0.5) * 0.15 : 0;
-      const chaosDy = a.modeChaos ? (Math.random() - 0.5) * 0.15 : 0;
-
-      // Epsilon-greedy action
-      const si = sIndex(a.x, a.y);
-      const q0 = Q[si + 0], q1 = Q[si + 1], q2 = Q[si + 2], q3 = Q[si + 3];
-      const explore = Math.random() < a.eps;
-      let act = explore ? ACTIONS[(Math.random() * 4) | 0] : argmax4(q0, q1, q2, q3);
-
-      // Track exploration vs exploitation
-      if (explore) {
-        globalStats.explorationSteps++;
-      } else {
-        globalStats.exploitationSteps++;
-      }
-
-      let dx = 0, dy = 0;
-      if (act === 0) dy = -1; else if (act === 1) dx = 1; else if (act === 2) dy = 1; else dx = -1;
-      dx += flockBias.dx + chaosDx; dy += flockBias.dy + chaosDy;
-
-      if (Math.abs(dx) > Math.abs(dy)) { dx = Math.sign(dx); dy = 0; }
-      else if (Math.abs(dy) > 0) { dy = Math.sign(dy); dx = 0; }
-
-      const oldX = a.x, oldY = a.y;
-      const nxp = clamp(a.x + dx, 0, nx - 1);
-      const nyp = clamp(a.y + dy, 0, ny - 1);
-      const moved = (nxp !== oldX || nyp !== oldY);
-
-      // Rewards - Basic vs Advanced system
-      let r = -0.01; // Small time penalty
-      const rewardMode = currentControls.rewardMode;
-      
-      if (rewardMode === 1) {
-        // Advanced Reward System
-        // Distance-based reward (closer to goal = higher reward)
-        const goalGridX = Math.floor(goal.x + 0.5);
-        const goalGridY = Math.floor(goal.y + 0.5);
-        const distanceToGoal = Math.abs(nxp - goalGridX) + Math.abs(nyp - goalGridY);
-        const maxDistance = nx + ny; // Manhattan distance across entire grid
-        const distanceReward = (1.0 - distanceToGoal / maxDistance) * 0.05; // 0.05 max reward for being close
-        
-        // Wall penalty (stronger in advanced mode)
-        if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) {
-          r -= 0.2; // Stronger wall penalty
+      while (iterations-- > 0) {
+        // Flocking bias (soft) - optimized with cached center of mass
+        let flockBias = { dx: 0, dy: 0 };
+        if (a.modeFlock && globalStats.flockCenterX !== undefined) {
+          flockBias.dx = (globalStats.flockCenterX - a.x) * 0.02;
+          flockBias.dy = (globalStats.flockCenterY - a.y) * 0.02;
         }
-        
-        // Efficiency bonus (reward for taking fewer steps to reach goal)
-        const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.025 - (a.steps * 0.0005)) : 0;
-        
-        r += distanceReward + efficiencyBonus;
-      } else if (rewardMode === 2) {
-        // Crazy Reward System
-        const goalGridX = Math.floor(goal.x + 0.5);
-        const goalGridY = Math.floor(goal.y + 0.5);
-        const distanceToGoal = Math.abs(nxp - goalGridX) + Math.abs(nyp - goalGridY);
-        const maxDistance = nx + ny;
-        
-        // Multiple reward types
-        const distanceReward = (1.0 - distanceToGoal / maxDistance) * 0.1; // 0.1 max
-        const speedReward = a.steps > 0 ? Math.max(0, 0.03 - (a.steps * 0.0003)) : 0; // Speed bonus
-        const explorationReward = Math.random() * 0.02; // Random exploration bonus
-        const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.05 - (a.steps * 0.0005)) : 0;
-        
-        // Multi-goal bonus (if reaching multiple goals quickly)
-        const multiGoalBonus = a.goalsReached > 1 ? 0.15 : 0;
-        
-        if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) {
-          r -= 0.5; // Much stronger wall penalty
+
+        // Optional chaos overlay
+        const chaosDx = a.modeChaos ? (Math.random() - 0.5) * 0.15 : 0;
+        const chaosDy = a.modeChaos ? (Math.random() - 0.5) * 0.15 : 0;
+
+        // Epsilon-greedy action
+        const si = sIndex(a.x, a.y);
+        const q0 = Q[si + 0], q1 = Q[si + 1], q2 = Q[si + 2], q3 = Q[si + 3];
+        const explore = Math.random() < a.eps;
+        let act = explore ? ACTIONS[(Math.random() * 4) | 0] : argmax4(q0, q1, q2, q3);
+
+        // Track exploration vs exploitation
+        if (explore) {
+          globalStats.explorationSteps++;
+        } else {
+          globalStats.exploitationSteps++;
         }
-        
-        r += distanceReward + speedReward + explorationReward + efficiencyBonus + multiGoalBonus;
-      } else {
-        // Basic Reward System
-        if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) r -= 0.02;
+
+        let dx = 0, dy = 0;
+        if (act === 0) dy = -1; else if (act === 1) dx = 1; else if (act === 2) dy = 1; else dx = -1;
+        dx += flockBias.dx + chaosDx; dy += flockBias.dy + chaosDy;
+
+        if (Math.abs(dx) > Math.abs(dy)) { dx = Math.sign(dx); dy = 0; }
+        else if (Math.abs(dy) > 0) { dy = Math.sign(dy); dx = 0; }
+
+        const oldX = a.x, oldY = a.y;
+        const nxp = clamp(Math.round(a.x + dx), 0, nx - 1);
+        const nyp = clamp(Math.round(a.y + dy), 0, ny - 1);
+        const moved = (nxp !== oldX || nyp !== oldY);
+
+        // Rewards - Basic vs Advanced system
+        let r = -0.01; // Small time penalty
+        const rewardMode = currentControls.rewardMode;
+
+        if (rewardMode === 1) {
+          // Advanced Reward System
+          // Distance-based reward (closer to goal = higher reward)
+          const goalGridX = Math.floor(goal.x + 0.5);
+          const goalGridY = Math.floor(goal.y + 0.5);
+          const distanceToGoal = Math.abs(nxp - goalGridX) + Math.abs(nyp - goalGridY);
+          const maxDistance = nx + ny; // Manhattan distance across entire grid
+          const distanceReward = (1.0 - distanceToGoal / maxDistance) * 0.05; // 0.05 max reward for being close
+
+          // Wall penalty (stronger in advanced mode)
+          if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) {
+            r -= 0.2; // Stronger wall penalty
+          }
+
+          // Efficiency bonus (reward for taking fewer steps to reach goal)
+          const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.025 - (a.steps * 0.0005)) : 0;
+
+          r += distanceReward + efficiencyBonus;
+        } else if (rewardMode === 2) {
+          // Crazy Reward System
+          const goalGridX = Math.floor(goal.x + 0.5);
+          const goalGridY = Math.floor(goal.y + 0.5);
+          const distanceToGoal = Math.abs(nxp - goalGridX) + Math.abs(nyp - goalGridY);
+          const maxDistance = nx + ny;
+
+          // Multiple reward types
+          const distanceReward = (1.0 - distanceToGoal / maxDistance) * 0.1; // 0.1 max
+          const speedReward = a.steps > 0 ? Math.max(0, 0.03 - (a.steps * 0.0003)) : 0; // Speed bonus
+          const explorationReward = Math.random() * 0.02; // Random exploration bonus
+          const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.05 - (a.steps * 0.0005)) : 0;
+
+          // Multi-goal bonus (if reaching multiple goals quickly)
+          const multiGoalBonus = a.goalsReached > 1 ? 0.15 : 0;
+
+          if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) {
+            r -= 0.5; // Much stronger wall penalty
+          }
+
+          r += distanceReward + speedReward + explorationReward + efficiencyBonus + multiGoalBonus;
+        } else {
+          // Basic Reward System
+          if (nxp === 0 || nxp === nx - 1 || nyp === 0 || nyp === ny - 1) r -= 0.02;
+        }
+
+        // Check if agent reached goal (with tolerance for smooth movement)
+        const goalGridX = Math.floor(goal.x + 0.5); // round to nearest grid cell
+        const goalGridY = Math.floor(goal.y + 0.5);
+        const reached = (nxp === goalGridX && nyp === goalGridY);
+        if (reached) {
+          r += rewardMode === 0 ? 1.0 : rewardMode === 1 ? 2.0 : 4.0; // Higher reward in advanced/crazy mode
+          a.goalsReached++;
+          globalStats.totalGoals++;
+          globalStats.lastGoalTime = performance.now();
+        }
+
+        // TD update
+        const sj = sIndex(nxp, nyp);
+        const maxNext = Math.max(Q[sj + 0], Q[sj + 1], Q[sj + 2], Q[sj + 3]);
+        const td = r + a.gamma * maxNext - Q[si + (act as number)];
+        Q[si + (act as number)] += a.alpha * td;
+        globalStats.qTableUpdates++;
+
+        a.prevX = oldX;
+        a.prevY = oldY;
+        a.x = nxp;
+        a.y = nyp;
+        a.targetX = nxp;
+        a.targetY = nyp;
+        a.eps = Math.max(0.02, a.eps * 0.9995);
+        a.steps++;
+        a.totalReward += r;
+        globalStats.totalSteps++;
+        if (moved) {
+          a.trailDistanceAcc = 0;
+        }
+
+        if (reached) {
+          emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.6);
+          nudgeGoalAfterCapture();
+
+          // Mark agent for death - it will be removed and replaced
+          (a as any).shouldDie = true;
+        }
       }
-      
-      // Check if agent reached goal (with tolerance for smooth movement)
-      const goalGridX = Math.floor(goal.x + 0.5); // round to nearest grid cell
-      const goalGridY = Math.floor(goal.y + 0.5);
-      const reached = (nxp === goalGridX && nyp === goalGridY);
-      if (reached) {
-        r += rewardMode === 0 ? 1.0 : rewardMode === 1 ? 2.0 : 4.0; // Higher reward in advanced/crazy mode
-        a.goalsReached++;
-        globalStats.totalGoals++;
-        globalStats.lastGoalTime = performance.now();
-      }
+    }
 
-      // TD update
-      const sj = sIndex(nxp, nyp);
-      const maxNext = Math.max(Q[sj + 0], Q[sj + 1], Q[sj + 2], Q[sj + 3]);
-      const td = r + a.gamma * maxNext - Q[si + (act as number)];
-      Q[si + (act as number)] += a.alpha * td;
-      globalStats.qTableUpdates++;
+    function integrateAgents(dt: number) {
+      const trailSpacing = 0.12;
+      const spring = 14; // how strongly agents chase their target cell
+      const damping = 8; // reduces wobble
 
-      a.x = nxp; a.y = nyp;
-      a.eps = Math.max(0.02, a.eps * 0.9995);
-      a.steps++;
-      a.totalReward += r;
-      globalStats.totalSteps++;
+      for (let i = 0; i < agents.length; i++) {
+        const agent = agents[i];
+        const prevRenderX = agent.renderX;
+        const prevRenderY = agent.renderY;
 
-      if (moved) {
-        a.trail.push({ x: a.x, y: a.y });
-        clampTrail(a.trail);
-      }
+        const targetX = agent.targetX;
+        const targetY = agent.targetY;
+        const dx = targetX - agent.renderX;
+        const dy = targetY - agent.renderY;
 
-      if (reached) {
-        emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.6);
-        nudgeGoalAfterCapture();
-        
-        // Mark agent for death - it will be removed and replaced
-        (a as any).shouldDie = true;
+        agent.velocityX += (dx * spring - agent.velocityX * damping) * dt;
+        agent.velocityY += (dy * spring - agent.velocityY * damping) * dt;
+
+        agent.renderX += agent.velocityX * dt;
+        agent.renderY += agent.velocityY * dt;
+
+        const movedDistance = Math.hypot(agent.renderX - prevRenderX, agent.renderY - prevRenderY);
+        agent.trailDistanceAcc += movedDistance;
+
+        if (agent.trailDistanceAcc >= trailSpacing) {
+          agent.trail.push({ x: agent.renderX, y: agent.renderY });
+          clampTrail(agent.trail);
+          agent.trailDistanceAcc = 0;
+        }
+
+        const distanceToTarget = Math.hypot(targetX - agent.renderX, targetY - agent.renderY);
+        if (distanceToTarget < 0.01) {
+          agent.renderX = targetX;
+          agent.renderY = targetY;
+          agent.velocityX = 0;
+          agent.velocityY = 0;
+          const lastTrail = agent.trail[agent.trail.length - 1];
+          if (!lastTrail || Math.hypot(lastTrail.x - targetX, lastTrail.y - targetY) > 1e-3) {
+            agent.trail.push({ x: targetX, y: targetY });
+            clampTrail(agent.trail);
+          }
+        }
       }
     }
 
@@ -603,6 +728,10 @@ export default function AgentGridRLBackground({ children }: Props) {
     
     function drawGrid(t: number) {
       if (!ctx) return;
+      const flowFrozen = getIsFlowFrozen();
+      const flowTime = flowFrozen ? 0 : t;
+      const rippleScale = flowFrozen ? 0 : 1;
+      const baseWaveScale = flowFrozen ? 0 : 1;
       
       // Only recreate gradients if dimensions changed
       if (!cachedVerticalGradient || H !== lastGradientHeight) {
@@ -648,7 +777,9 @@ export default function AgentGridRLBackground({ children }: Props) {
           const f = s / samples;
           const y = f * H;
           const d = depthFactor(y);
-          const field = baseWaves(x0, y, t) * amp * (0.45 + 0.9 * d) + rippleField(x0, y, t) * 0.045 * (1 + 1.3 * d);
+          const field =
+            baseWaveScale * baseWaves(x0, y, flowTime) * amp * (0.45 + 0.9 * d) +
+            rippleScale * rippleField(x0, y, flowTime) * 0.045 * (1 + 1.3 * d);
           const px = x0 + field * (0.6 + 0.5 * d);
           const py = y;
           if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
@@ -668,7 +799,9 @@ export default function AgentGridRLBackground({ children }: Props) {
           const f = s / samples;
           const x = f * W;
           const d = depthFactor(y0);
-          const field = baseWaves(x, y0, t) * amp * (0.5 + 0.8 * d) + rippleField(x, y0, t) * 0.042 * (1 + 1.2 * d);
+          const field =
+            baseWaveScale * baseWaves(x, y0, flowTime) * amp * (0.5 + 0.8 * d) +
+            rippleScale * rippleField(x, y0, flowTime) * 0.042 * (1 + 1.2 * d);
           const px = x;
           const py = y0 + field * (0.6 + 0.5 * d);
           if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
@@ -722,7 +855,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       for (let i = 0; i < agents.length; i++) {
         const a = agents[i];
-        const [ax, ay] = toPx(a.x, a.y);
+        const [ax, ay] = toPx(a.renderX, a.renderY);
 
         // Trail: draw faded polyline segments from old → recent (optimized)
         if (a.trail.length >= 2) {
@@ -804,7 +937,6 @@ export default function AgentGridRLBackground({ children }: Props) {
     //   console.assert(showGoal === true, "showGoal should be true by default");
 
     //   // Test 4c: RL steps slowed
-    //   console.assert(RL_STEPS === 0.15, "RL_STEPS should be 0.15 for slower motion (0.5x * 0.3)");
 
     //   // Test 5: Big-pulse clamp should not exceed MAX_RIPPLE
     //   ripples.push({ x: 200, y: 200, t: t0 - 0.05, amp: 22, speed: 260, decay: 1.8 });
@@ -851,30 +983,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       
       const spawnX = Math.floor(Math.random() * nx);
       const spawnY = Math.floor(Math.random() * ny);
-      const currentControls = getControls();
-      
-      const newAgent = {
-        x: spawnX,
-        y: spawnY,
-        eps: currentControls.explorationRate + Math.random() * 0.25,
-        alpha: currentControls.learningRate,
-        gamma: 0.96,
-        modeChaos: false,
-        modeFlock: true,
-        colorHue: Math.floor(Math.random() * 360),
-        trail: [] as Array<{x:number,y:number}>,
-        goalsReached: 0,
-        steps: 0,
-        totalReward: 0,
-        birthTime: performance.now(),
-        lifespan: 40000,
-        isSpawned: true,
-        speedBoost: false,
-        originalEps: currentControls.explorationRate + Math.random() * 0.25,
-        originalAlpha: currentControls.learningRate,
-      };
-      
-      agents.push(newAgent);
+      spawnAgent(spawnX, spawnY, { isSpawned: true, colorHue: Math.floor(Math.random() * 360) });
       
       // Add a pulse at spawn location
       emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.2);
@@ -918,27 +1027,6 @@ export default function AgentGridRLBackground({ children }: Props) {
         const spawnX = Math.floor(Math.random() * nx);
         const spawnY = Math.floor(Math.random() * ny);
         
-        const newAgent = {
-          x: spawnX,
-          y: spawnY,
-          eps: currentControls.explorationRate + Math.random() * 0.25,
-          alpha: currentControls.learningRate,
-          gamma: 0.96,
-          modeChaos: false,
-          modeFlock: true,
-          colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range (180-300 degrees)
-          trail: [] as Array<{x:number,y:number}>,
-          goalsReached: 0,
-          steps: 0,
-          totalReward: 0,
-          birthTime: performance.now(),
-          lifespan: 40000,
-          isSpawned: true, // Mark as auto-spawned
-          speedBoost: false, // Speed boost mode
-          originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
-          originalAlpha: currentControls.learningRate, // Store original alpha
-        };
-        
         // Check if we're at the 12 agent limit for auto-spawn
         if (agents.length >= 12) {
           // Remove the oldest agent (first in array)
@@ -949,7 +1037,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           }
         }
         
-        agents.push(newAgent);
+        spawnAgent(spawnX, spawnY, { isSpawned: true });
         lastSpawnTime = now;
         
         // Add a small pulse at spawn location
@@ -965,29 +1053,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         for (let i = 0; i < needed; i++) {
           const spawnX = Math.floor(Math.random() * nx);
           const spawnY = Math.floor(Math.random() * ny);
-          
-          const safetyAgent = {
-            x: spawnX,
-            y: spawnY,
-            eps: currentControls.explorationRate + Math.random() * 0.25,
-            alpha: currentControls.learningRate,
-            gamma: 0.96,
-            modeChaos: false,
-            modeFlock: true,
-            colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range
-            trail: [] as Array<{x:number,y:number}>,
-            goalsReached: 0,
-            steps: 0,
-            totalReward: 0,
-            birthTime: performance.now(),
-            lifespan: 40000,
-            isSpawned: false, // Mark as safety agent
-            speedBoost: false,
-            originalEps: currentControls.explorationRate + Math.random() * 0.25,
-            originalAlpha: currentControls.learningRate,
-          };
-          
-          agents.push(safetyAgent);
+          spawnAgent(spawnX, spawnY, { isSpawned: false });
         }
       }
 
@@ -1002,21 +1068,11 @@ export default function AgentGridRLBackground({ children }: Props) {
         globalStats.flockCenterY = cy / agents.length;
       }
 
-      // RL: dynamic steps per frame based on controls and speed boost
-      const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
-      RL_STEPS = currentControls.stepSpeed * 0.2 * speedBoostMultiplier; // 1x default = 0.2x actual speed (slower than before)
-      
-      // Use accumulator for consistent agent updates (better than random)
-      globalStats.agentUpdateAccumulator = (globalStats.agentUpdateAccumulator || 0) + RL_STEPS;
-      if (globalStats.agentUpdateAccumulator >= 1) {
-        const updateCount = Math.floor(globalStats.agentUpdateAccumulator);
-        globalStats.agentUpdateAccumulator -= updateCount;
-        
-        for (let i = 0; i < updateCount; i++) {
-          agents.forEach(stepAgent);
-        }
+      // RL: continuous-time stepping creates smoother motion
+      for (let i = 0; i < agents.length; i++) {
+        stepAgent(agents[i], dt, currentControls);
       }
-      
+
       // Handle agent death and replacement
       const currentTime = performance.now();
       
@@ -1043,35 +1099,18 @@ export default function AgentGridRLBackground({ children }: Props) {
           if (agents.length >= 5) {
             const spawnX = Math.floor(Math.random() * nx);
             const spawnY = Math.floor(Math.random() * ny);
-            
-            const replacementAgent = {
-              x: spawnX,
-              y: spawnY,
-              eps: currentControls.explorationRate + Math.random() * 0.25,
-              alpha: currentControls.learningRate,
-              gamma: 0.96,
-              modeChaos: false,
-              modeFlock: true,
-              colorHue: 180 + Math.floor(Math.random() * 120), // blue to purple range
-              trail: [] as Array<{x:number,y:number}>,
-              goalsReached: 0,
-              steps: 0,
-              totalReward: 0,
-              birthTime: currentTime,
-              lifespan: 40000,
+            spawnAgent(spawnX, spawnY, {
               isSpawned: true,
-              speedBoost: false, // Speed boost mode
-              originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
-              originalAlpha: currentControls.learningRate, // Store original alpha
-            };
-            
-            agents.push(replacementAgent);
+              birthTime: currentTime,
+            });
             
             // Add a pulse at spawn location
             emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.0);
           }
         }
       }
+
+      integrateAgents(dt);
 
       // Update statistics every 30 frames (roughly 0.5 seconds at 60fps)
       if (Math.floor(now * 60) % 30 === 0) {
@@ -1164,6 +1203,31 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       {/* Control buttons */}
       <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+        {/* Flow toggle */}
+        <button
+          onClick={() => setIsFlowFrozen(prev => !prev)}
+          className={`group relative w-12 h-12 rounded-full border border-white/20 flex items-center justify-center transition-all duration-200 shadow-2xl shadow-black/70 ${
+            isFlowFrozen
+              ? 'bg-white/10 hover:bg-white/20'
+              : 'bg-cyan-500/20 hover:bg-cyan-500/30 shadow-cyan-500/40'
+          }`}
+          title={isFlowFrozen ? "Enable flowing background" : "Freeze grid background"}
+        >
+          {isFlowFrozen ? (
+            <svg className="w-6 h-6 text-white/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v16H4zM9 4v16M15 4v16M4 9h16M4 15h16" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-cyan-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />
+            </svg>
+          )}
+          <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-black/80 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+            {isFlowFrozen ? "Enable flowing grid" : "Freeze grid motion"}
+            <div className="absolute top-full right-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/80"></div>
+          </div>
+        </button>
+
         {/* Pause button */}
         <button 
           onClick={() => {
