@@ -139,7 +139,10 @@ export default function AgentGridRLBackground({ children }: Props) {
       goalRef.current = { x: Math.max(2, Math.min(nx - 3, Math.floor(nx * 0.5))), y: Math.max(2, Math.min(ny - 3, Math.floor(ny * 0.5))) };
     }
     const goal = goalRef.current;
-    let goalVelocity = { dx: controls.goalSpeed, dy: controls.goalSpeed * 0.8 }; // dynamic movement speed
+    let goalVelocity = {
+      dx: controls.goalSpeed * (Math.random() > 0.5 ? 1 : -1),
+      dy: controls.goalSpeed * 0.8 * (Math.random() > 0.5 ? 1 : -1),
+    }; // dynamic movement speed with random starting direction
     let showGoal = true;
     
     // Auto-spawn timer
@@ -302,53 +305,61 @@ export default function AgentGridRLBackground({ children }: Props) {
 
     // Simple helpers
     const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-    const randint = (a: number, b: number) => Math.floor(a + Math.random() * (b - a + 1));
 
     function clampTrail<T>(arr: T[]) {
       const excess = arr.length - TRAIL_MAX;
       if (excess > 0) arr.splice(0, excess);
     }
 
-    function moveGoal() {
-      goal.x = randint(1, nx - 2);
-      goal.y = randint(1, ny - 2);
-      emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.35); // tiny pulse
+    function ensureGoalWithinBounds() {
+      goal.x = clamp(goal.x, 1, nx - 2);
+      goal.y = clamp(goal.y, 1, ny - 2);
+    }
+    
+    function nudgeGoalAfterCapture() {
+      ensureGoalWithinBounds();
+      const baseSpeed = Math.max(controls.goalSpeed, 0.005);
+      const angle = Math.random() * Math.PI * 2;
+      goalVelocity.dx = Math.cos(angle) * baseSpeed;
+      goalVelocity.dy = Math.sin(angle) * baseSpeed * 0.8;
+      goal.x = clamp(goal.x + goalVelocity.dx * 8, 1, nx - 2);
+      goal.y = clamp(goal.y + goalVelocity.dy * 8, 1, ny - 2);
     }
     
     function updateGoalPosition() {
-      // Update goal velocity based on controls
-      goalVelocity.dx = controls.goalSpeed;
-      goalVelocity.dy = controls.goalSpeed * 0.8;
+      const baseSpeed = Math.max(controls.goalSpeed, 0.005);
+      const baseSpeedY = baseSpeed * 0.8;
+      const maxSpeed = baseSpeed * 2;
+      const maxSpeedY = baseSpeedY * 2;
+
+      const normalizeComponent = (current: number, minMag: number, maxMag: number) => {
+        if (!Number.isFinite(current) || Math.abs(current) < minMag) {
+          const directionSeed = current || (Math.random() - 0.5);
+          const sign = Math.sign(directionSeed) || 1;
+          return sign * minMag;
+        }
+        return clamp(current, -maxMag, maxMag);
+      };
+
+      goalVelocity.dx = normalizeComponent(goalVelocity.dx, baseSpeed * 0.5, maxSpeed);
+      goalVelocity.dy = normalizeComponent(goalVelocity.dy, baseSpeedY * 0.5, maxSpeedY);
       
-      // Add small random changes to velocity occasionally
-      if (Math.random() < 0.02) { // 2% chance each frame
-        goalVelocity.dx += (Math.random() - 0.5) * 0.01;
-        goalVelocity.dy += (Math.random() - 0.5) * 0.01;
-        
-        // Clamp velocity to reasonable range
-        goalVelocity.dx = Math.max(-controls.goalSpeed * 2, Math.min(controls.goalSpeed * 2, goalVelocity.dx));
-        goalVelocity.dy = Math.max(-controls.goalSpeed * 2, Math.min(controls.goalSpeed * 2, goalVelocity.dy));
+      if (Math.random() < 0.02) {
+        goalVelocity.dx += (Math.random() - 0.5) * baseSpeed * 0.4;
+        goalVelocity.dy += (Math.random() - 0.5) * baseSpeedY * 0.4;
       }
-      
-      // Update goal position with velocity
+
       goal.x += goalVelocity.dx;
       goal.y += goalVelocity.dy;
-      
-      // Bounce off edges with some randomness - fixed boundary logic
-      if (goal.x <= 1) {
-        goalVelocity.dx = Math.abs(goalVelocity.dx) * (0.8 + Math.random() * 0.4); // ensure positive velocity
-        goal.x = 1;
-      } else if (goal.x >= nx - 2) {
-        goalVelocity.dx = -Math.abs(goalVelocity.dx) * (0.8 + Math.random() * 0.4); // ensure negative velocity
-        goal.x = nx - 2;
+
+      if (goal.x <= 1 || goal.x >= nx - 2) {
+        goalVelocity.dx = -goalVelocity.dx;
+        goal.x = clamp(goal.x, 1, nx - 2);
       }
       
-      if (goal.y <= 1) {
-        goalVelocity.dy = Math.abs(goalVelocity.dy) * (0.8 + Math.random() * 0.4); // ensure positive velocity
-        goal.y = 1;
-      } else if (goal.y >= ny - 2) {
-        goalVelocity.dy = -Math.abs(goalVelocity.dy) * (0.8 + Math.random() * 0.4); // ensure negative velocity
-        goal.y = ny - 2;
+      if (goal.y <= 1 || goal.y >= ny - 2) {
+        goalVelocity.dy = -goalVelocity.dy;
+        goal.y = clamp(goal.y, 1, ny - 2);
       }
     }
 
@@ -374,7 +385,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         a.x = clamp(a.x, 0, nx - 1);
         a.y = clamp(a.y, 0, ny - 1);
         a.trail.length = 0; // reset trail on significant grid change to avoid jumps
-        moveGoal();
+        ensureGoalWithinBounds();
       }
 
       // Flocking bias (soft) - optimized with cached center of mass
@@ -491,7 +502,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       if (reached) {
         emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.6);
-        moveGoal();
+        nudgeGoalAfterCapture();
         
         // Mark agent for death - it will be removed and replaced
         (a as any).shouldDie = true;
