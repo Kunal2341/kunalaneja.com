@@ -141,6 +141,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       velocityY: number;
       targetX: number;
       targetY: number;
+      pendingTargets: Array<{x:number,y:number}>;
       trail: Array<{x:number,y:number}>;
       trailDistanceAcc: number;
       eps: number;
@@ -181,6 +182,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         velocityY: 0,
         targetX: spawnX,
         targetY: spawnY,
+        pendingTargets: [],
         trail: [{ x: spawnX, y: spawnY }],
         trailDistanceAcc: 0,
         eps: epsBase,
@@ -484,6 +486,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         a.targetY = a.y;
         a.velocityX = 0;
         a.velocityY = 0;
+        a.pendingTargets.length = 0;
         a.trail.length = 0;
         a.trail.push({ x: a.x, y: a.y });
         a.trailDistanceAcc = 0;
@@ -535,6 +538,20 @@ export default function AgentGridRLBackground({ children }: Props) {
         const nxp = clamp(Math.round(a.x + dx), 0, nx - 1);
         const nyp = clamp(Math.round(a.y + dy), 0, ny - 1);
         const moved = (nxp !== oldX || nyp !== oldY);
+        a.x = nxp;
+        a.y = nyp;
+        if (moved) {
+          a.pendingTargets.push({ x: nxp, y: nyp });
+          if (a.pendingTargets.length > 24) {
+            a.pendingTargets.splice(0, a.pendingTargets.length - 24);
+          }
+          const currentDist = Math.hypot(a.renderX - a.targetX, a.renderY - a.targetY);
+          if (currentDist < 0.05 && a.pendingTargets.length > 0) {
+            const nextTarget = a.pendingTargets.shift()!;
+            a.targetX = nextTarget.x;
+            a.targetY = nextTarget.y;
+          }
+        }
 
         // Rewards - Basic vs Advanced system
         let r = -0.01; // Small time penalty
@@ -604,10 +621,6 @@ export default function AgentGridRLBackground({ children }: Props) {
 
         a.prevX = oldX;
         a.prevY = oldY;
-        a.x = nxp;
-        a.y = nyp;
-        a.targetX = nxp;
-        a.targetY = nyp;
         a.eps = Math.max(0.02, a.eps * 0.9995);
         a.steps++;
         a.totalReward += r;
@@ -635,6 +648,15 @@ export default function AgentGridRLBackground({ children }: Props) {
         const agent = agents[i];
         const prevRenderX = agent.renderX;
         const prevRenderY = agent.renderY;
+
+        if (agent.pendingTargets.length > 0) {
+          const remainingDist = Math.hypot(agent.targetX - agent.renderX, agent.targetY - agent.renderY);
+          if (remainingDist < 0.02) {
+            const next = agent.pendingTargets.shift()!;
+            agent.targetX = next.x;
+            agent.targetY = next.y;
+          }
+        }
 
         const targetX = agent.targetX;
         const targetY = agent.targetY;
@@ -666,6 +688,11 @@ export default function AgentGridRLBackground({ children }: Props) {
           if (!lastTrail || Math.hypot(lastTrail.x - targetX, lastTrail.y - targetY) > 1e-3) {
             agent.trail.push({ x: targetX, y: targetY });
             clampTrail(agent.trail);
+          }
+          if (agent.pendingTargets.length > 0) {
+            const next = agent.pendingTargets.shift()!;
+            agent.targetX = next.x;
+            agent.targetY = next.y;
           }
         }
       }
@@ -911,46 +938,6 @@ export default function AgentGridRLBackground({ children }: Props) {
         ctx.restore();
       }
     }
-
-    // --- Dev self-tests (run once) ----------------------------------------
-    // (function runSelfTests() {
-    //   const nearly = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
-    //   const t0 = performance.now() * 0.001;
-
-    //   // Test 1: rippleField should be 0 when no ripples are present
-    //   const r0 = rippleField(100, 100, t0);
-    //   console.assert(nearly(r0, 0), `rippleField(empty) expected 0, got ${r0}`);
-
-    //   // Test 2: sIndex layout sanity
-    //   console.assert(sIndex(0, 0) === 0, "sIndex(0,0) should be 0");
-    //   console.assert(sIndex(1, 0) === 4, "sIndex(1,0) should be 4");
-    //   console.assert(sIndex(0, 1) === nx * 4, "sIndex(0,1) should be nx*4");
-
-    //   // Test 3: baseWaves finiteness
-    //   const bw = baseWaves(10, 20, 0.5);
-    //   console.assert(Number.isFinite(bw), "baseWaves should return a finite number");
-
-    //   // Test 4: Agents initialized (2 by default)
-    //   console.assert(agents.length === AGENT_COUNT, "agents.length mismatch");
-
-    //   // Test 4b: showGoal default
-    //   console.assert(showGoal === true, "showGoal should be true by default");
-
-    //   // Test 4c: RL steps slowed
-
-    //   // Test 5: Big-pulse clamp should not exceed MAX_RIPPLE
-    //   ripples.push({ x: 200, y: 200, t: t0 - 0.05, amp: 22, speed: 260, decay: 1.8 });
-    //   const rc = rippleField(200, 200, t0 + 0.10);
-    //   console.assert(Math.abs(rc) <= MAX_RIPPLE + 1e-6, `ripple clamp failed: |${rc}| > ${MAX_RIPPLE}`);
-
-    //   // Test 6: trail clamp
-    //   const tmp: number[] = [];
-    //   const TRAIL_MAX_LOCAL = 70;
-    //   for (let i = 0; i < TRAIL_MAX_LOCAL + 15; i++) { tmp.push(i); if (tmp.length > TRAIL_MAX_LOCAL) tmp.splice(0, tmp.length - TRAIL_MAX_LOCAL); }
-    //   console.assert(tmp.length <= TRAIL_MAX_LOCAL, `trail clamp failed: len=${tmp.length} > ${TRAIL_MAX_LOCAL}`);
-
-    // })();
-
     // Statistics update function
     function updateStats() {
       const now = performance.now();
@@ -1045,7 +1032,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       }
 
       // Update goal position with smooth bouncing
-      updateGoalPosition();
+      // updateGoalPosition(); // Goal movement disabled
 
       // Safety check: Ensure we always have at least 5 agents
       if (agents.length < 5) {
