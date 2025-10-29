@@ -37,7 +37,7 @@ export default function App() {
           </div>
         </header>
 
-      <main style={{ pointerEvents: "none" }}>
+      <main>
         <Section id="research" title="Research">
           <div className="grid md:grid-cols-2 gap-6" style={{ pointerEvents: "auto" }}>
             {profile.publications.map((p, i) => <PublicationCard key={i} pub={p} />)}

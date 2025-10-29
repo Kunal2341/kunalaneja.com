@@ -49,16 +49,47 @@ export default function AgentGridRLBackground({ children }: Props) {
   // Pause state
   const [isPaused, setIsPaused] = useState(false);
 
+  const controlsRef = useRef(controls);
+  const isPausedRef = useRef(isPaused);
+
+  useEffect(() => {
+    controlsRef.current = controls;
+  }, [controls]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const getControls = () => controlsRef.current;
+    const getIsPaused = () => isPausedRef.current;
+    let last = performance.now() * 0.001;
+
+    const motionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let reduceMotion = motionMedia.matches;
+    const onMotionChange = (event: MediaQueryListEvent) => {
+      reduceMotion = event.matches;
+      if (!reduceMotion) {
+        last = performance.now() * 0.001;
+      }
+    };
+    if (motionMedia.addEventListener) {
+      motionMedia.addEventListener("change", onMotionChange);
+    } else {
+      // Safari support
+      // @ts-ignore
+      motionMedia.addListener(onMotionChange);
+    }
+
     // --- Tunables for subtle vibe ---
     const MAX_RIPPLE = 45;            // allow larger user pulses
     const BG_WARP_AMP = 15;            // base warp amplitude (subtle but flowing)
-    let RL_STEPS = controls.stepSpeed * 0.2; // dynamic agent motion speed (1x default = 0.2x actual, slower than before)
+    let RL_STEPS = getControls().stepSpeed * 0.2; // dynamic agent motion speed (1x default = 0.2x actual, slower than before)
     const AUTOPULSE_PERIOD = 7.5;     // seconds between quiet auto pulses
 
     // Trail settings
@@ -139,15 +170,16 @@ export default function AgentGridRLBackground({ children }: Props) {
       goalRef.current = { x: Math.max(2, Math.min(nx - 3, Math.floor(nx * 0.5))), y: Math.max(2, Math.min(ny - 3, Math.floor(ny * 0.5))) };
     }
     const goal = goalRef.current;
+    const controlsSnapshot = getControls();
     let goalVelocity = {
-      dx: controls.goalSpeed * (Math.random() > 0.5 ? 1 : -1),
-      dy: controls.goalSpeed * 0.8 * (Math.random() > 0.5 ? 1 : -1),
+      dx: controlsSnapshot.goalSpeed * (Math.random() > 0.5 ? 1 : -1),
+      dy: controlsSnapshot.goalSpeed * 0.8 * (Math.random() > 0.5 ? 1 : -1),
     }; // dynamic movement speed with random starting direction
     let showGoal = true;
     
     // Auto-spawn timer
     let lastSpawnTime = 0;
-    let SPAWN_INTERVAL = controls.autoSpawnRate; // dynamic spawn interval
+    let SPAWN_INTERVAL = controlsSnapshot.autoSpawnRate; // dynamic spawn interval
 
     // Ripples
     type Ripple = { x: number, y: number, t: number, amp: number, speed: number, decay: number };
@@ -258,11 +290,12 @@ export default function AgentGridRLBackground({ children }: Props) {
       
       
       // Create new agent with random properties
+      const currentControls = getControls();
       const newAgent = {
         x: clampedX,
         y: clampedY,
-        eps: controls.explorationRate + Math.random() * 0.25,
-        alpha: controls.learningRate,
+        eps: currentControls.explorationRate + Math.random() * 0.25,
+        alpha: currentControls.learningRate,
         gamma: 0.96,
         modeChaos: false,
         modeFlock: true,
@@ -275,8 +308,8 @@ export default function AgentGridRLBackground({ children }: Props) {
         lifespan: 40000, // 40 seconds in milliseconds (only applies if >5 agents)
         isSpawned: true, // Mark as user-spawned (not initial)
         speedBoost: false, // Speed boost mode
-        originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
-        originalAlpha: controls.learningRate, // Store original alpha
+        originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
+        originalAlpha: currentControls.learningRate, // Store original alpha
       };
       
       // Check if we're at the 12 agent limit
@@ -318,7 +351,8 @@ export default function AgentGridRLBackground({ children }: Props) {
     
     function nudgeGoalAfterCapture() {
       ensureGoalWithinBounds();
-      const baseSpeed = Math.max(controls.goalSpeed, 0.005);
+      const currentControls = getControls();
+      const baseSpeed = Math.max(currentControls.goalSpeed, 0.005);
       const angle = Math.random() * Math.PI * 2;
       goalVelocity.dx = Math.cos(angle) * baseSpeed;
       goalVelocity.dy = Math.sin(angle) * baseSpeed * 0.8;
@@ -327,7 +361,8 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
     
     function updateGoalPosition() {
-      const baseSpeed = Math.max(controls.goalSpeed, 0.005);
+      const currentControls = getControls();
+      const baseSpeed = Math.max(currentControls.goalSpeed, 0.005);
       const baseSpeedY = baseSpeed * 0.8;
       const maxSpeed = baseSpeed * 2;
       const maxSpeedY = baseSpeedY * 2;
@@ -377,6 +412,7 @@ export default function AgentGridRLBackground({ children }: Props) {
     function stepAgent(a: typeof agents[number]) {
       // (Re-)dimension safeguard
       if (!canvas) return;
+      const currentControls = getControls();
       const expectedNx = Math.max(8, Math.floor(canvas.clientWidth / cellPx));
       const expectedNy = Math.max(6, Math.floor(canvas.clientHeight / cellPx));
       if (expectedNx !== nx || expectedNy !== ny) {
@@ -425,8 +461,9 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       // Rewards - Basic vs Advanced system
       let r = -0.01; // Small time penalty
+      const rewardMode = currentControls.rewardMode;
       
-      if (controls.rewardMode === 1) {
+      if (rewardMode === 1) {
         // Advanced Reward System
         // Distance-based reward (closer to goal = higher reward)
         const goalGridX = Math.floor(goal.x + 0.5);
@@ -444,7 +481,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         const efficiencyBonus = a.steps > 0 ? Math.max(0, 0.025 - (a.steps * 0.0005)) : 0;
         
         r += distanceReward + efficiencyBonus;
-      } else if (controls.rewardMode === 2) {
+      } else if (rewardMode === 2) {
         // Crazy Reward System
         const goalGridX = Math.floor(goal.x + 0.5);
         const goalGridY = Math.floor(goal.y + 0.5);
@@ -475,7 +512,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       const goalGridY = Math.floor(goal.y + 0.5);
       const reached = (nxp === goalGridX && nyp === goalGridY);
       if (reached) {
-        r += controls.rewardMode === 0 ? 1.0 : controls.rewardMode === 1 ? 2.0 : 4.0; // Higher reward in advanced/crazy mode
+        r += rewardMode === 0 ? 1.0 : rewardMode === 1 ? 2.0 : 4.0; // Higher reward in advanced/crazy mode
         a.goalsReached++;
         globalStats.totalGoals++;
         globalStats.lastGoalTime = performance.now();
@@ -776,6 +813,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       const explorationRate = globalStats.explorationSteps / (globalStats.explorationSteps + globalStats.exploitationSteps) * 100;
       const bestAgentScore = Math.max(...agents.map(a => a.goalsReached));
       const averageReward = agents.reduce((sum, a) => sum + a.totalReward, 0) / agents.length;
+      const currentControls = getControls();
 
       setStats({
         totalGoals: globalStats.totalGoals,
@@ -783,7 +821,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         averageEpsilon: Math.round(averageEpsilon * 1000) / 1000,
         qTableSize: Q.length,
         agentsActive: agents.length,
-        learningRate: controls.learningRate,
+        learningRate: currentControls.learningRate,
         sessionTime: Math.round(sessionTime),
         goalsPerMinute: Math.round(goalsPerMinute * 10) / 10,
         explorationRate: Math.round(explorationRate * 10) / 10,
@@ -798,12 +836,13 @@ export default function AgentGridRLBackground({ children }: Props) {
       
       const spawnX = Math.floor(Math.random() * nx);
       const spawnY = Math.floor(Math.random() * ny);
+      const currentControls = getControls();
       
       const newAgent = {
         x: spawnX,
         y: spawnY,
-        eps: controls.explorationRate + Math.random() * 0.25,
-        alpha: controls.learningRate,
+        eps: currentControls.explorationRate + Math.random() * 0.25,
+        alpha: currentControls.learningRate,
         gamma: 0.96,
         modeChaos: false,
         modeFlock: true,
@@ -816,8 +855,8 @@ export default function AgentGridRLBackground({ children }: Props) {
         lifespan: 40000,
         isSpawned: true,
         speedBoost: false,
-        originalEps: controls.explorationRate + Math.random() * 0.25,
-        originalAlpha: controls.learningRate,
+        originalEps: currentControls.explorationRate + Math.random() * 0.25,
+        originalAlpha: currentControls.learningRate,
       };
       
       agents.push(newAgent);
@@ -827,19 +866,21 @@ export default function AgentGridRLBackground({ children }: Props) {
     }
 
     // Main loop -------------------------------------------------------------
-    let last = performance.now() * 0.001;
     let rafId = 0 as number | 0;
 
     function frame() {
       const now = performance.now() * 0.001;
       const dt = Math.min(0.05, now - last);
-      const renderTime = isPaused ? last : now;
+      const paused = getIsPaused();
+      const renderTime = (reduceMotion || paused) ? last : now;
+      const currentControls = getControls();
       
       // Always draw the grid, even when paused
       drawGrid(renderTime);
       
-      // If paused, only draw the grid and stop here
-      if (isPaused) {
+      // Honor reduced motion or pause: draw agents once and skip simulation
+      if (reduceMotion || paused) {
+        drawAgents(renderTime);
         rafId = requestAnimationFrame(frame) as unknown as number;
         return;
       }
@@ -857,7 +898,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       if (pointer.active && Math.random() < 0.05) emitPulse(pointer.x, pointer.y, 0.25);
 
       // Auto-spawn new agents every few seconds (update interval dynamically)
-      SPAWN_INTERVAL = controls.autoSpawnRate;
+      SPAWN_INTERVAL = currentControls.autoSpawnRate;
       if (now - lastSpawnTime > SPAWN_INTERVAL) {
         const spawnX = Math.floor(Math.random() * nx);
         const spawnY = Math.floor(Math.random() * ny);
@@ -865,8 +906,8 @@ export default function AgentGridRLBackground({ children }: Props) {
         const newAgent = {
           x: spawnX,
           y: spawnY,
-          eps: controls.explorationRate + Math.random() * 0.25,
-          alpha: controls.learningRate,
+          eps: currentControls.explorationRate + Math.random() * 0.25,
+          alpha: currentControls.learningRate,
           gamma: 0.96,
           modeChaos: false,
           modeFlock: true,
@@ -879,8 +920,8 @@ export default function AgentGridRLBackground({ children }: Props) {
           lifespan: 40000,
           isSpawned: true, // Mark as auto-spawned
           speedBoost: false, // Speed boost mode
-          originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
-          originalAlpha: controls.learningRate, // Store original alpha
+          originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
+          originalAlpha: currentControls.learningRate, // Store original alpha
         };
         
         // Check if we're at the 12 agent limit for auto-spawn
@@ -913,8 +954,8 @@ export default function AgentGridRLBackground({ children }: Props) {
           const safetyAgent = {
             x: spawnX,
             y: spawnY,
-            eps: controls.explorationRate + Math.random() * 0.25,
-            alpha: controls.learningRate,
+            eps: currentControls.explorationRate + Math.random() * 0.25,
+            alpha: currentControls.learningRate,
             gamma: 0.96,
             modeChaos: false,
             modeFlock: true,
@@ -927,8 +968,8 @@ export default function AgentGridRLBackground({ children }: Props) {
             lifespan: 40000,
             isSpawned: false, // Mark as safety agent
             speedBoost: false,
-            originalEps: controls.explorationRate + Math.random() * 0.25,
-            originalAlpha: controls.learningRate,
+            originalEps: currentControls.explorationRate + Math.random() * 0.25,
+            originalAlpha: currentControls.learningRate,
           };
           
           agents.push(safetyAgent);
@@ -948,7 +989,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       // RL: dynamic steps per frame based on controls and speed boost
       const speedBoostMultiplier = agents[0]?.speedBoost ? 3 : 1; // 3x speed when boosted
-      RL_STEPS = controls.stepSpeed * 0.2 * speedBoostMultiplier; // 1x default = 0.2x actual speed (slower than before)
+      RL_STEPS = currentControls.stepSpeed * 0.2 * speedBoostMultiplier; // 1x default = 0.2x actual speed (slower than before)
       
       // Use accumulator for consistent agent updates (better than random)
       globalStats.agentUpdateAccumulator = (globalStats.agentUpdateAccumulator || 0) + RL_STEPS;
@@ -991,8 +1032,8 @@ export default function AgentGridRLBackground({ children }: Props) {
             const replacementAgent = {
               x: spawnX,
               y: spawnY,
-              eps: controls.explorationRate + Math.random() * 0.25,
-              alpha: controls.learningRate,
+              eps: currentControls.explorationRate + Math.random() * 0.25,
+              alpha: currentControls.learningRate,
               gamma: 0.96,
               modeChaos: false,
               modeFlock: true,
@@ -1005,8 +1046,8 @@ export default function AgentGridRLBackground({ children }: Props) {
               lifespan: 40000,
               isSpawned: true,
               speedBoost: false, // Speed boost mode
-              originalEps: controls.explorationRate + Math.random() * 0.25, // Store original epsilon
-              originalAlpha: controls.learningRate, // Store original alpha
+              originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
+              originalAlpha: currentControls.learningRate, // Store original alpha
             };
             
             agents.push(replacementAgent);
@@ -1052,11 +1093,17 @@ export default function AgentGridRLBackground({ children }: Props) {
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mouseleave", onLeave);
       document.removeEventListener("pointerdown", onPointerDown, { capture: true } as any);
+      if (motionMedia.removeEventListener) {
+        motionMedia.removeEventListener("change", onMotionChange);
+      } else {
+        // @ts-ignore
+        motionMedia.removeListener(onMotionChange);
+      }
       canvas.style.transform = "";
       // delete (window as any).spawnRandomAgent;
       // delete (window as any).testCanvasClick;
     };
-  }, [controls, isPaused]);
+  }, []);
 
   return (
     <div className="relative w-full min-h-screen">
