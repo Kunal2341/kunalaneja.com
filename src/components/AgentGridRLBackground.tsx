@@ -130,26 +130,33 @@ export default function AgentGridRLBackground({ children }: Props) {
     // Agents (subtle: few)
     const AGENT_COUNT = 5; // set to 1 if you want literally one agent
     const agentColors = [200, 240, 280, 320, 360]; // distinct color hues for each agent
-    const agents = Array.from({ length: AGENT_COUNT }, (_, i) => ({
-      x: Math.floor(Math.random() * nx),
-      y: Math.floor(Math.random() * ny),
-      eps: 0.20 + Math.random() * 0.25, // slightly less exploration to reduce jitter
-      alpha: 0.22, // learning rate
-      gamma: 0.96, // discount
-      modeChaos: false,
-      modeFlock: true,
-      colorHue: agentColors[i], // each agent gets a distinct color
-      trail: [] as Array<{x:number,y:number}>,       // history in grid coords
-      goalsReached: 0, // track individual agent performance
-      steps: 0, // track steps taken by this agent
-      totalReward: 0, // track cumulative reward
-      birthTime: performance.now(), // Track when agent was created
-      lifespan: 40000, // 40 seconds in milliseconds
-      isSpawned: false, // Mark as initial agent (permanent)
-      speedBoost: false, // Speed boost mode
-      originalEps: 0.2, // Store original epsilon for speed boost
-      originalAlpha: 0.22, // Store original alpha for speed boost
-    }));
+    const agents = Array.from({ length: AGENT_COUNT }, (_, i) => {
+      const spawnX = Math.floor(Math.random() * nx);
+      const spawnY = Math.floor(Math.random() * ny);
+      return {
+        x: spawnX,
+        y: spawnY,
+        visualX: spawnX,
+        visualY: spawnY,
+        eps: 0.20 + Math.random() * 0.25, // slightly less exploration to reduce jitter
+        alpha: 0.22, // learning rate
+        gamma: 0.96, // discount
+        modeChaos: false,
+        modeFlock: true,
+        colorHue: agentColors[i], // each agent gets a distinct color
+        trail: [] as Array<{x:number,y:number}>,       // history in grid coords
+        goalsReached: 0, // track individual agent performance
+        steps: 0, // track steps taken by this agent
+        totalReward: 0, // track cumulative reward
+        birthTime: performance.now(), // Track when agent was created
+        lifespan: 40000, // 40 seconds in milliseconds
+        isSpawned: false, // Mark as initial agent (permanent)
+        speedBoost: false, // Speed boost mode
+        originalEps: 0.2, // Store original epsilon for speed boost
+        originalAlpha: 0.22, // Store original alpha for speed boost
+        hasMoved: false, // track motion for smoothing
+      };
+    });
     
     // Global statistics tracking
     let globalStats = {
@@ -294,6 +301,8 @@ export default function AgentGridRLBackground({ children }: Props) {
       const newAgent = {
         x: clampedX,
         y: clampedY,
+        visualX: clampedX,
+        visualY: clampedY,
         eps: currentControls.explorationRate + Math.random() * 0.25,
         alpha: currentControls.learningRate,
         gamma: 0.96,
@@ -310,6 +319,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         speedBoost: false, // Speed boost mode
         originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
         originalAlpha: currentControls.learningRate, // Store original alpha
+        hasMoved: false,
       };
       
       // Check if we're at the 12 agent limit
@@ -458,6 +468,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       const oldX = a.x, oldY = a.y;
       const nxp = clamp(a.x + dx, 0, nx - 1);
       const nyp = clamp(a.y + dy, 0, ny - 1);
+      const moved = (nxp !== oldX || nyp !== oldY);
 
       // Rewards - Basic vs Advanced system
       let r = -0.01; // Small time penalty
@@ -530,12 +541,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       a.steps++;
       a.totalReward += r;
       globalStats.totalSteps++;
-
-      // Trail update (only on movement)
-      if (a.x !== oldX || a.y !== oldY) {
-        a.trail.push({ x: a.x, y: a.y });
-        clampTrail(a.trail);
-      }
+      a.hasMoved = moved;
 
       if (reached) {
         emitPulse(goal.x * (W / nx) + (W / nx) / 2, goal.y * (H / ny) + (H / ny) / 2, 0.6);
@@ -722,7 +728,7 @@ export default function AgentGridRLBackground({ children }: Props) {
 
       for (let i = 0; i < agents.length; i++) {
         const a = agents[i];
-        const [ax, ay] = toPx(a.x, a.y);
+        const [ax, ay] = toPx(a.visualX ?? a.x, a.visualY ?? a.y);
 
         // Trail: draw faded polyline segments from old → recent (optimized)
         if (a.trail.length >= 2) {
@@ -841,6 +847,8 @@ export default function AgentGridRLBackground({ children }: Props) {
       const newAgent = {
         x: spawnX,
         y: spawnY,
+        visualX: spawnX,
+        visualY: spawnY,
         eps: currentControls.explorationRate + Math.random() * 0.25,
         alpha: currentControls.learningRate,
         gamma: 0.96,
@@ -857,6 +865,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         speedBoost: false,
         originalEps: currentControls.explorationRate + Math.random() * 0.25,
         originalAlpha: currentControls.learningRate,
+        hasMoved: false,
       };
       
       agents.push(newAgent);
@@ -906,6 +915,8 @@ export default function AgentGridRLBackground({ children }: Props) {
         const newAgent = {
           x: spawnX,
           y: spawnY,
+          visualX: spawnX,
+          visualY: spawnY,
           eps: currentControls.explorationRate + Math.random() * 0.25,
           alpha: currentControls.learningRate,
           gamma: 0.96,
@@ -922,6 +933,7 @@ export default function AgentGridRLBackground({ children }: Props) {
           speedBoost: false, // Speed boost mode
           originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
           originalAlpha: currentControls.learningRate, // Store original alpha
+          hasMoved: false,
         };
         
         // Check if we're at the 12 agent limit for auto-spawn
@@ -954,6 +966,8 @@ export default function AgentGridRLBackground({ children }: Props) {
           const safetyAgent = {
             x: spawnX,
             y: spawnY,
+            visualX: spawnX,
+            visualY: spawnY,
             eps: currentControls.explorationRate + Math.random() * 0.25,
             alpha: currentControls.learningRate,
             gamma: 0.96,
@@ -970,6 +984,7 @@ export default function AgentGridRLBackground({ children }: Props) {
             speedBoost: false,
             originalEps: currentControls.explorationRate + Math.random() * 0.25,
             originalAlpha: currentControls.learningRate,
+            hasMoved: false,
           };
           
           agents.push(safetyAgent);
@@ -1032,6 +1047,8 @@ export default function AgentGridRLBackground({ children }: Props) {
             const replacementAgent = {
               x: spawnX,
               y: spawnY,
+              visualX: spawnX,
+              visualY: spawnY,
               eps: currentControls.explorationRate + Math.random() * 0.25,
               alpha: currentControls.learningRate,
               gamma: 0.96,
@@ -1048,6 +1065,7 @@ export default function AgentGridRLBackground({ children }: Props) {
               speedBoost: false, // Speed boost mode
               originalEps: currentControls.explorationRate + Math.random() * 0.25, // Store original epsilon
               originalAlpha: currentControls.learningRate, // Store original alpha
+              hasMoved: false,
             };
             
             agents.push(replacementAgent);
@@ -1056,6 +1074,28 @@ export default function AgentGridRLBackground({ children }: Props) {
             emitPulse(spawnX * (W / nx) + (W / nx) / 2, spawnY * (H / ny) + (H / ny) / 2, 1.0);
           }
         }
+      }
+
+      // Smooth agent visuals and update trails after physics step
+      const smoothingRate = Math.min(1, dt * 8);
+      const minTrailDistance = 0.06;
+      for (let i = 0; i < agents.length; i++) {
+        const agent = agents[i];
+        if (typeof agent.visualX !== "number") agent.visualX = agent.x;
+        if (typeof agent.visualY !== "number") agent.visualY = agent.y;
+
+        agent.visualX += (agent.x - agent.visualX) * smoothingRate;
+        agent.visualY += (agent.y - agent.visualY) * smoothingRate;
+
+        const lastTrail = agent.trail[agent.trail.length - 1];
+        const dxTrail = agent.visualX - (lastTrail?.x ?? agent.visualX);
+        const dyTrail = agent.visualY - (lastTrail?.y ?? agent.visualY);
+        if (!lastTrail || agent.hasMoved || Math.hypot(dxTrail, dyTrail) > minTrailDistance) {
+          agent.trail.push({ x: agent.visualX, y: agent.visualY });
+          clampTrail(agent.trail);
+        }
+
+        agent.hasMoved = false;
       }
 
       // Update statistics every 30 frames (roughly 0.5 seconds at 60fps)
