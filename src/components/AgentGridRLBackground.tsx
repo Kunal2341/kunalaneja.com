@@ -188,7 +188,7 @@ export default function AgentGridRLBackground({ children }: Props) {
         alpha: learning,
         gamma: 0.96,
         modeChaos: false,
-        modeFlock: true,
+        modeFlock: false,
         colorHue: baseHue,
         goalsReached: 0,
         steps: 0,
@@ -1020,7 +1020,7 @@ export default function AgentGridRLBackground({ children }: Props) {
       }
 
       // Update goal position with smooth bouncing
-      // updateGoalPosition(); // Goal movement disabled
+      updateGoalPosition(); // Goal movement disabled
 
       // Safety check: Ensure we always have at least 5 agents
       if (agents.length < 5) {
