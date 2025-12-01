@@ -30,7 +30,7 @@ export default function App() {
               <div className="mt-6 text-sm text-white max-w-lg relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/80 to-black/60 rounded-lg -m-2 border border-white/20"></div>
                 <p className="relative z-10 p-3 font-light leading-relaxed">
-                  I am a MS student at Georgia Tech studying robot learning with RL in the PAIR Lab under Animesh Garg, focused on achieving generalization in sequential decision making agents
+                  I am a BSMS student at Georgia Tech studying robot learning with RL in the PAIR Lab under Animesh Garg, focused on achieving generalization in sequential decision making agents
                 </p>
               </div>
             </div>
