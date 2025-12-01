@@ -54,7 +54,7 @@ export default function App() {
           <div className="grid md:grid-cols-2 gap-8 items-start" style={{ pointerEvents: "auto" }}>
             <div>
               <p className="text-white/80">
-                I am an MS student at Georgia Tech studying computer science with a focus on machine learning and robotics. 
+                I am a BSMS student at Georgia Tech studying computer science with a focus on machine learning and robotics. 
                 My research interests span reinforcement learning, computer vision, and human-robot interaction.
               </p>
               <p className="text-white/70 mt-4">
@@ -71,7 +71,7 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div className="glass rounded-xl p-4 flex-1">
+              {/* <div className="glass rounded-xl p-4 flex-1">
                 <h3 className="font-semibold mb-3 text-center">Resume</h3>
                 <a 
                   href="/resume.pdf" 
@@ -85,7 +85,7 @@ export default function App() {
                   </svg>
                   Download PDF
                 </a>
-              </div>
+              </div> */}
             </div>
           </div>
         </Section>
