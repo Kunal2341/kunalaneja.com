@@ -30,7 +30,7 @@ export default function App() {
               <div className="mt-6 text-sm text-white max-w-lg relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/80 to-black/60 rounded-lg -m-2 border border-white/20"></div>
                 <p className="relative z-10 p-3 font-light leading-relaxed">
-                  I am a BSMS student at Georgia Tech studying robot learning with RL in the PAIR Lab under Animesh Garg, focused on achieving generalization in sequential decision making agents
+                  I am a software engineer at Google DeepMind Robotics team (Gemini trusted tester program).
                 </p>
               </div>
             </div>
@@ -54,11 +54,11 @@ export default function App() {
           <div className="grid md:grid-cols-2 gap-8 items-start" style={{ pointerEvents: "auto" }}>
             <div>
               <p className="text-white/80">
-                I am a BSMS student at Georgia Tech studying computer science with a focus on machine learning and robotics. 
+                I am a software engineer at Google DeepMind Robotics team (Gemini trusted tester program). I studied computer science with a focus on machine learning and robotics. 
                 My research interests span reinforcement learning, computer vision, and human-robot interaction.
               </p>
               <p className="text-white/70 mt-4">
-                At the PAIR Lab, I work on trajectory modeling and decision-making systems that enable robots to perform 
+                During my time at the PAIR Lab, I worked on trajectory modeling and decision-making systems that enable robots to perform 
                 tasks without explicit action annotations, advancing toward more autonomous robotic systems.
               </p>
             </div>
