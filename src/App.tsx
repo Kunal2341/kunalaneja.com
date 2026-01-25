@@ -112,6 +112,7 @@ export default function App() {
             </div>
             <div className="glass rounded-xl p-5">
               <p className="text-white/70 mt-2">Email: <a href={`mailto:${profile.email}`} className="underline">{profile.emailDisplay}</a></p>
+              <p className="text-white/70 mt-1">GT Email: <a href={`mailto:${profile.secondaryEmail}`} className="underline">{profile.secondaryEmailDisplay}</a></p>
               <p className="text-white/70 mt-1">Location: {profile.location}</p>
               <div className="mt-4 flex gap-3">
                 <a className="text-sm px-3 py-1.5 rounded bg-white/10 hover:bg-white/20 transition" href={profile.socials.github} target="_blank" rel="noopener noreferrer">GitHub</a>

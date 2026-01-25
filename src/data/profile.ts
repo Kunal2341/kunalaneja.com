@@ -41,10 +41,12 @@ export type Experience = {
 
 export const profile = {
   name: "Kunal Aneja",
-  tagline: "Research Engineer • RL • VLA • Robotics",
+  tagline: "Software Engineer (Google DeepMind) • RL • VLA • Robotics",
   location: "Atlanta, GA",
-  email: "kunala@gatech.edu",
-  emailDisplay: "kunala <at> gatech.edu",
+  email: "kunal.aneja101@gmail.com",
+  emailDisplay: "kunal.aneja101 <at> gmail.com",
+  secondaryEmail: "kunala@gatech.edu",
+  secondaryEmailDisplay: "kunala <at> gatech.edu",
   socials: {
     github: "https://github.com/Kunal2341",
     scholar: "https://scholar.google.com/citations?user=Faop3qAAAAAJ&hl=en",
@@ -167,14 +169,6 @@ export const profile = {
   education: [
     {
       institution: "Georgia Institute of Technology",
-      degree: "Master of Science",
-      field: "Machine Learning (Robotics)",
-      period: "Aug 2025 - May 2026",
-      gpa: "4.0",
-      coursework: ["Deep Reinforcement Learning", "Vision-Language Models", "Formal Methods of Reinforcement Learning"]
-    },
-    {
-      institution: "Georgia Institute of Technology",
       degree: "Bachelor of Science",
       field: "Computer Science",
       period: "Aug 2022 - Aug 2025",
@@ -184,6 +178,14 @@ export const profile = {
     }
   ] as Education[],
   experience: [
+    {
+      company: "Google DeepMind",
+      position: "Software Engineer",
+      location: "Mountain View, CA",
+      period: "Jan 2026 – Present",
+      description: "Robotics team (Gemini trusted tester program).",
+      tags: ["Robotics", "AI", "Software Engineering"]
+    },
     {
       company: "Amazon Web Services",
       position: "Software Development Engineer Intern",
